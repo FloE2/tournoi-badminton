@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournoi Badminton - YDM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; min-height: 100vh; padding: 20px;
+        }
+
+        .class-selector-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); display: flex;
+            justify-content: center; align-items: center; z-index: 10000;
+        }
+
+        .class-selector-box {
+            background: white; padding: 30px; border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto;
+        }
+
+        .class-selector-box h2 {
+            color: #667eea; margin-bottom: 10px; font-size: 1.8em; text-align: center;
+        }
+
+        .class-selector-box > p {
+            color: #666; margin-bottom: 20px; text-align: center;
+        }
+
+        .existing-classes {
+            background: #f8f9fa; padding: 20px; border-radius: 10px;
+            margin-bottom: 20px; border: 2px solid #e0e0e0;
+        }
+
+        .existing-classes h3 {
+            color: #667eea; font-size: 1.1em; margin-bottom: 15px;
+            text-align: center; display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+        }
+
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 10px; max-height: 180px; overflow-y: auto;
+            padding: 5px;
+        }
+
+        .class-button {
+            padding: 12px 8px; background: white;
+            border: 2px solid #667eea; border-radius: 8px;
+            cursor: pointer; transition: all 0.3s;
+            font-weight: bold; color: #667eea;
+            text-align: center; font-size: 0.95em;
+        }
+
+        .class-button:hover {
+            background: #667eea; color: white;
+            transform: scale(1.05); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .divider {
+            display: flex; align-items: center;
+            text-align: center; margin: 20px 0; color: #999;
+        }
+
+        .divider::before, .divider::after {
+            content: ''; flex: 1; border-bottom: 1px solid #ddd;
+        }
+
+        .divider span {
+            padding: 0 15px; font-weight: bold; font-size: 0.9em;
+        }
+
+        .class-selector-box input {
+            width: 100%; padding: 15px; font-size: 1.1em;
+            border: 2px solid #667eea; border-radius: 8px;
+            margin-bottom: 15px; text-align: center;
+        }
+
+        .class-selector-box input:focus {
+            outline: none; border-color: #764ba2;
+        }
+
+        .class-examples {
+            background: #f0f0f0; padding: 12px;
+            border-radius: 8px; margin-bottom: 15px; font-size: 0.85em;
+        }
+
+        .class-examples strong {
+            color: #667eea; display: block; margin-bottom: 8px;
+        }
+
+        .class-selector-box button {
+            width: 100%; padding: 15px; background: #667eea;
+            color: white; border: none; border-radius: 8px;
+            font-size: 1.1em; font-weight: bold; cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .class-selector-box button:hover {
+            background: #5568d3; transform: scale(1.02);
+        }
+
+        .container {
+            max-width: 1400px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden; display: none;
+        }
+
+        .container.visible { display: block; }
+
+        .sync-status {
+            position: fixed; top: 10px; right: 10px;
+            background: rgba(0, 200, 81, 0.9); color: white;
+            padding: 8px 15px; border-radius: 20px;
+            font-size: 0.85em; z-index: 1000;
+            display: none; align-items: center; gap: 8px;
+        }
+
+        .sync-status.syncing { background: rgba(255, 152, 0, 0.9); }
+        .sync-status.error { background: rgba(244, 67, 54, 0.9); }
+
+        .class-changer {
+            position: fixed; top: 10px; left: 10px;
+            background: rgba(102, 126, 234, 0.9); color: white;
+            padding: 8px 15px; border-radius: 20px; font-size: 0.85em;
+            cursor: pointer; z-index: 1000; transition: all 0.3s;
+            display: none;
+        }
+
+        .class-changer:hover {
+            background: rgba(102, 126, 234, 1); transform: scale(1.05);
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 15px; text-align: center;
+        }
+
+        h1 { font-size: 1.8em; margin-bottom: 3px; }
+        .subtitle { font-size: 1em; opacity: 0.9; margin-bottom: 3px; }
+
+        .class-name {
+            font-size: 1.2em; font-weight: bold;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px; border-radius: 8px;
+            display: inline-block; margin-top: 5px;
+        }
+
+        .tabs {
+            display: flex; background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            flex: 1; padding: 12px; text-align: center;
+            cursor: pointer; font-weight: bold;
+            transition: all 0.3s; border: none;
+            background: transparent; font-size: 14px;
+        }
+
+        .tab:hover { background: #e0e0e0; }
+        .tab.active { background: white; border-bottom: 3px solid #667eea; }
+
+        .tab-content { display: none; padding: 15px; }
+        .tab-content.active { display: block; }
+
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px; margin-bottom: 20px;
+        }
+
+        .student-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; background: #f9f9f9;
+            border-radius: 8px; border: 2px solid #e0e0e0;
+        }
+
+        .student-item input {
+            flex: 1; padding: 8px; border: 1px solid #ddd;
+            border-radius: 5px; font-size: 14px;
+        }
+
+        .student-item button {
+            background: #ff4444; color: white; border: none;
+            padding: 8px 12px; border-radius: 5px;
+            cursor: pointer; font-weight: bold;
+        }
+
+        .student-item button:hover { background: #cc0000; }
+
+        .buttons-row {
+            display: flex; gap: 15px;
+            margin-top: 20px; flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: all 0.3s;
+        }
+
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-danger { background: #ff4444; color: white; }
+        .btn-danger:hover { background: #cc0000; }
+        .btn-success { background: #00C851; color: white; }
+        .btn-success:hover { background: #007E33; }
+
+        .ranking-table {
+            width: 100%; border-collapse: collapse; margin-top: 20px;
+        }
+
+        .ranking-table th, .ranking-table td {
+            padding: 8px 10px; text-align: left;
+            border-bottom: 1px solid #e0e0e0; font-size: 0.9em;
+        }
+
+        .ranking-table th {
+            background: #667eea; color: white;
+            font-weight: bold; position: sticky; top: 0;
+        }
+
+        .ranking-table tr:hover { background: #f5f5f5; }
+        .ranking-table tr.top-half { background: #e8f5e9; }
+        .ranking-table tr.bottom-half { background: #fff3e0; }
+
+        .rank { font-weight: bold; font-size: 1em; color: #667eea; }
+        .points { font-size: 1.1em; font-weight: bold; color: #00C851; }
+
+        .match-setup {
+            display: grid; grid-template-columns: 1fr auto 1fr;
+            gap: 20px; align-items: center; margin-bottom: 30px;
+        }
+
+        .player-select {
+            padding: 15px; background: #f9f9f9;
+            border-radius: 10px; border: 2px solid #e0e0e0;
+        }
+
+        .player-select select {
+            width: 100%; padding: 12px; font-size: 16px;
+            border: 2px solid #667eea; border-radius: 8px; margin-top: 10px;
+        }
+
+        .vs { font-size: 2em; font-weight: bold; color: #667eea; }
+
+        .points-preview {
+            background: #fff3cd; border: 2px solid #ffc107;
+            border-radius: 10px; padding: 20px;
+            margin: 20px 0; text-align: center;
+        }
+
+        .points-preview h3 {
+            color: #667eea; margin-bottom: 15px;
+        }
+
+        .points-scenarios {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 15px; margin-top: 15px;
+        }
+
+        .scenario {
+            background: white; padding: 15px;
+            border-radius: 8px; border: 2px solid #667eea;
+        }
+
+        .scenario .player-name {
+            font-weight: bold; color: #667eea; margin-bottom: 8px;
+        }
+
+        .scenario .points-gain {
+            font-size: 1.5em; font-weight: bold; color: #00C851;
+        }
+
+        .scenario .advantage-badge {
+            display: inline-block; background: #ff9800;
+            color: white; padding: 5px 10px; border-radius: 5px;
+            font-size: 0.9em; margin-top: 8px; font-weight: bold;
+        }
+
+        .active-matches {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px; margin-top: 15px;
+        }
+
+        .match-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 12px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .match-card .players {
+            font-size: 1em; font-weight: bold;
+            margin-bottom: 8px; text-align: center;
+        }
+
+        .match-card .points-info {
+            background: rgba(255,255,255,0.2); padding: 6px;
+            border-radius: 5px; margin-bottom: 8px;
+            font-size: 0.8em; text-align: center;
+        }
+
+        .match-card .advantage-info {
+            background: rgba(255, 152, 0, 0.3); padding: 5px;
+            border-radius: 5px; margin-bottom: 6px;
+            font-size: 0.75em; text-align: center;
+            border: 1px solid rgba(255, 152, 0, 0.5);
+        }
+
+        .match-card .match-buttons {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+
+        .match-card button {
+            padding: 8px; border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer;
+            transition: all 0.3s; font-size: 0.85em;
+        }
+
+        .match-card button:hover { transform: scale(1.05); }
+        .match-card .winner-btn { background: #00C851; color: white; }
+
+        .settings-grid {
+            display: grid; gap: 20px; max-width: 800px;
+        }
+
+        .setting-item {
+            background: #f9f9f9; padding: 20px;
+            border-radius: 10px; border: 2px solid #e0e0e0;
+        }
+
+        .setting-item label {
+            display: block; font-weight: bold;
+            margin-bottom: 10px; color: #667eea;
+        }
+
+        .setting-item input {
+            width: 100%; padding: 12px; border: 2px solid #ddd;
+            border-radius: 8px; font-size: 16px;
+        }
+
+        .setting-item small {
+            display: block; margin-top: 8px;
+            color: #666; font-style: italic;
+        }
+
+        .advantage-settings {
+            background: #fff3e0; padding: 20px;
+            border-radius: 10px; border: 2px solid #ff9800;
+            margin-top: 20px;
+        }
+
+        .advantage-settings h3 {
+            color: #ff9800; margin-bottom: 15px;
+        }
+
+        .advantage-tier {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 15px; margin-bottom: 15px;
+            padding: 15px; background: white; border-radius: 8px;
+        }
+
+        .legend {
+            margin-top: 15px; padding: 12px;
+            background: #f0f0f0; border-radius: 8px;
+        }
+
+        .legend h3 {
+            color: #667eea; margin-bottom: 8px; font-size: 1em;
+        }
+
+        .legend-items { display: grid; gap: 6px; }
+
+        .legend-item {
+            display: flex; align-items: center;
+            gap: 8px; font-size: 0.85em;
+        }
+
+        .legend-color {
+            width: 20px; height: 20px; border-radius: 5px;
+        }
+
+        .alert {
+            padding: 15px; background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px; margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #e3f2fd; padding: 20px;
+            border-radius: 10px; margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+
+        @media (max-width: 768px) {
+            .match-setup { grid-template-columns: 1fr; }
+            .students-grid { grid-template-columns: 1fr; }
+            .points-scenarios { grid-template-columns: 1fr; }
+            .advantage-tier { grid-template-columns: 1fr; }
+            h1 { font-size: 1.8em; }
+            .classes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+
+        footer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 20px;
+            text-align: center; margin-top: 30px;
+        }
+
+        .copyright { font-size: 0.9em; opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="class-selector-overlay" id="classSelectorOverlay">
+        <div class="class-selector-box">
+            <h2>🏸 Tournoi de Badminton</h2>
+            <p>Sélectionnez ou créez une classe</p>
+            
+            <div id="existingClassesSection" style="display: none;">
+                <div class="existing-classes">
+                    <h3><span>📚</span> Classes existantes <span style="font-size: 0.8em; color: #999;">(cliquez pour accéder)</span></h3>
+                    <div class="classes-grid" id="classesGrid"></div>
+                </div>
+                <div class="divider"><span>OU CRÉER UNE NOUVELLE CLASSE</span></div>
+            </div>
+            
+            <input type="text" 
+                   id="classNameInput" 
+                   placeholder="Ex: 4A, 6C, 5ème B..."
+                   maxlength="20"
+                   autofocus>
+            
+            <div class="class-examples">
+                <strong>💡 Exemples :</strong>
+                4A • 4B • 5ème C • 6C • 3ème • CM2 • Collège...
+            </div>
+            
+            <button onclick="selectClass()">✅ Créer/Accéder à cette classe</button>
+        </div>
+    </div>
+
+    <div class="class-changer" id="classChanger" onclick="changeClass()">
+        📝 Changer de classe
+    </div>
+
+    <div class="sync-status" id="syncStatus">
+        <span id="syncIcon">🔄</span>
+        <span id="syncText">Connexion...</span>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <header>
+            <h1>🏸 Tournoi de Badminton</h1>
+            <p class="subtitle">Yves du Manoir</p>
+            <div class="class-name" id="classNameDisplay"></div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('ranking')">📊 Classement</button>
+            <button class="tab" onclick="switchTab('matches')">⚔️ Matchs</button>
+            <button class="tab" onclick="switchTab('students')">👥 Élèves</button>
+            <button class="tab" onclick="switchTab('settings')">⚙️ Paramètres</button>
+        </div>
+
+        <div id="ranking" class="tab-content active">
+            <div class="buttons-row">
+                <button class="btn btn-primary" onclick="toggleFullscreen()">🖥️ Plein Écran</button>
+                <button class="btn btn-success" onclick="exportData()">💾 Exporter</button>
+                <button class="btn btn-danger" onclick="resetTournament()">🔄 Réinitialiser</button>
+            </div>
+
+            <div class="legend">
+                <h3>Légende</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e8f5e9;"></div>
+                        <span><strong>Moitié supérieure</strong> - Classement supérieur</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fff3e0;"></div>
+                        <span><strong>Moitié inférieure</strong> - Classement inférieur</span>
+                    </div>
+                </div>
+            </div>
+
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Rang</th>
+                        <th>Prénom</th>
+                        <th>Points</th>
+                        <th>Matchs</th>
+                        <th>Victoires</th>
+                        <th>Défaites</th>
+                        <th>Ratio V/D</th>
+                    </tr>
+                </thead>
+                <tbody id="rankingBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="matches" class="tab-content">
+            <div class="info-box">
+                <strong>ℹ️ Règles du tournoi :</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Les matchs se jouent en 11 points</li>
+                    <li><strong>Tous les joueurs peuvent s'affronter sans restriction</strong></li>
+                    <li><strong>🎯 Système d'avantage au score :</strong> Le joueur moins bien classé peut commencer avec des points d'avance</li>
+                    <li>Plus l'écart de classement est grand, plus les points gagnés sont importants en cas de victoire du plus faible</li>
+                    <li>Nombre de matchs simultanés illimité</li>
+                </ul>
+            </div>
+
+            <div class="match-setup">
+                <div class="player-select">
+                    <label><strong>Joueur 1</strong></label>
+                    <select id="player1Select" onchange="updatePointsPreview()">
+                        <option value="">-- Sélectionner --</option>
+                    </select>
+                </div>
+                <div class="vs">VS</div>
+                <div class="player-select">
+                    <label><strong>Joueur 2</strong></label>
+                    <select id="player2Select" onchange="updatePointsPreview()">
+                        <option value="">-- Sélectionner --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="pointsPreview" class="points-preview" style="display: none;">
+                <h3>⚡ Points en jeu pour ce match</h3>
+                <div class="points-scenarios">
+                    <div class="scenario">
+                        <div class="player-name" id="scenario1Player"></div>
+                        <div>Si victoire :</div>
+                        <div class="points-gain" id="scenario1Points"></div>
+                        <div id="scenario1Advantage"></div>
+                    </div>
+                    <div class="scenario">
+                        <div class="player-name" id="scenario2Player"></div>
+                        <div>Si victoire :</div>
+                        <div class="points-gain" id="scenario2Points"></div>
+                        <div id="scenario2Advantage"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-success" onclick="startMatch()" style="display: block; margin: 0 auto;">
+                ▶️ Lancer le match
+            </button>
+
+            <h2 style="margin-top: 40px; color: #667eea;">Matchs en cours</h2>
+            <div class="active-matches" id="activeMatches">
+            </div>
+        </div>
+
+        <div id="students" class="tab-content">
+            <h2 style="color: #667eea; margin-bottom: 20px;" id="studentsTitle">Gestion des élèves</h2>
+            
+            <div class="buttons-row">
+                <button class="btn btn-primary" onclick="addStudent()">➕ Ajouter un élève</button>
+                <button class="btn btn-danger" onclick="clearAllStudents()">🗑️ Effacer tous les élèves</button>
+            </div>
+
+            <div class="students-grid" id="studentsGrid">
+            </div>
+        </div>
+
+        <div id="settings" class="tab-content">
+            <h2 style="color: #667eea; margin-bottom: 20px;">Paramètres du système de points</h2>
+
+            <div class="info-box">
+                <strong>ℹ️ Comment ça marche ?</strong>
+                <p style="margin-top: 10px;">Le système calcule automatiquement les points gagnés en fonction de l'écart de classement entre les deux joueurs. Plus l'adversaire est mieux classé, plus la victoire rapporte de points !</p>
+            </div>
+
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label>Points de départ</label>
+                    <input type="number" id="startingPoints" value="100" min="0">
+                    <small>Nombre de points avec lesquels tous les joueurs commencent</small>
+                </div>
+
+                <div class="setting-item">
+                    <label>Points minimum par victoire</label>
+                    <input type="number" id="minPointsWin" value="5" min="1">
+                    <small>Minimum de points gagnés même contre un adversaire beaucoup moins bien classé</small>
+                </div>
+
+                <div class="setting-item">
+                    <label>Points maximum par victoire</label>
+                    <input type="number" id="maxPointsWin" value="50" min="1">
+                    <small>Maximum de points gagnés en battant un adversaire beaucoup mieux classé</small>
+                </div>
+
+                <div class="setting-item">
+                    <label>Facteur d'amplification</label>
+                    <input type="number" id="amplificationFactor" value="0.3" min="0.1" max="2" step="0.1">
+                    <small>Plus ce nombre est élevé, plus l'écart de points influence les gains (0.1 = faible, 1.0 = fort)</small>
+                </div>
+            </div>
+
+            <div class="advantage-settings">
+                <h3>🎯 Système d'avantage au score</h3>
+                <p style="margin-bottom: 15px;">Le joueur moins bien classé commence avec des points d'avance au score selon l'écart de classement.</p>
+                
+                <div class="advantage-tier">
+                    <div class="setting-item" style="margin: 0;">
+                        <label>Écart minimum (places)</label>
+                        <input type="number" id="advantageTier1Gap" value="5" min="1">
+                        <small>Nombre de places d'écart minimum</small>
+                    </div>
+                    <div class="setting-item" style="margin: 0;">
+                        <label>Points d'avantage</label>
+                        <input type="number" id="advantageTier1Points" value="3" min="0">
+                        <small>Points de départ en plus</small>
+                    </div>
+                </div>
+
+                <div class="advantage-tier">
+                    <div class="setting-item" style="margin: 0;">
+                        <label>Écart minimum (places)</label>
+                        <input type="number" id="advantageTier2Gap" value="10" min="1">
+                        <small>Nombre de places d'écart minimum</small>
+                    </div>
+                    <div class="setting-item" style="margin: 0;">
+                        <label>Points d'avantage</label>
+                        <input type="number" id="advantageTier2Points" value="5" min="0">
+                        <small>Points de départ en plus</small>
+                    </div>
+                </div>
+
+                <div class="advantage-tier">
+                    <div class="setting-item" style="margin: 0;">
+                        <label>Écart minimum (places)</label>
+                        <input type="number" id="advantageTier3Gap" value="15" min="1">
+                        <small>Nombre de places d'écart minimum</small>
+                    </div>
+                    <div class="setting-item" style="margin: 0;">
+                        <label>Points d'avantage</label>
+                        <input type="number" id="advantageTier3Points" value="7" min="0">
+                        <small>Points de départ en plus</small>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-success" onclick="saveSettings()" style="margin-top: 20px;">💾 Sauvegarder les paramètres</button>
+
+            <div class="alert" style="margin-top: 30px;">
+                <strong>⚠️ Note :</strong> Les changements de paramètres n'affectent que les futurs matchs. Les points déjà attribués ne changent pas.
+            </div>
+        </div>
+
+        <footer>
+            <div class="copyright">
+                © 2025 - Application développée par <strong>EUDE Florian</strong> - Yves du Manoir
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBb3evRvsLVbtMPMixRAMSmICXSB4Z4Y24",
+            authDomain: "tournoi-badminton-ydm.firebaseapp.com",
+            databaseURL: "https://tournoi-badminton-ydm-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "tournoi-badminton-ydm",
+            storageBucket: "tournoi-badminton-ydm.firebasestorage.app",
+            messagingSenderId: "55944604172",
+            appId: "1:55944604172:web:3dd9b08b0755aed733dc29"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let CLASS_NAME = '';
+        let students = [];
+        let activeMatches = [];
+        let settings = {
+            startingPoints: 100,
+            minPointsWin: 5,
+            maxPointsWin: 50,
+            amplificationFactor: 0.3,
+            advantageTier1Gap: 5,
+            advantageTier1Points: 3,
+            advantageTier2Gap: 10,
+            advantageTier2Points: 5,
+            advantageTier3Gap: 15,
+            advantageTier3Points: 7
+        };
+
+        // Charger les classes existantes
+        async function loadExistingClasses() {
+            try {
+                const snapshot = await database.ref('tournaments').once('value');
+                if (snapshot.exists()) {
+                    const classes = Object.keys(snapshot.val()).sort();
+                    if (classes.length > 0) {
+                        document.getElementById('existingClassesSection').style.display = 'block';
+                        document.getElementById('classesGrid').innerHTML = classes.map(c => 
+                            `<div class="class-button" onclick="selectExistingClass('${c}')">${c}</div>`
+                        ).join('');
+                    }
+                }
+            } catch(e) {
+                console.error('Erreur chargement classes:', e);
+            }
+        }
+
+        window.selectExistingClass = function(className) {
+            document.getElementById('classNameInput').value = className;
+            selectClass();
+        }
+
+        window.selectClass = function() {
+            const input = document.getElementById('classNameInput');
+            CLASS_NAME = input.value.trim().toUpperCase();
+            
+            if (!CLASS_NAME) {
+                alert('❌ Veuillez entrer un nom de classe');
+                return;
+            }
+
+            localStorage.setItem('lastClassName', CLASS_NAME);
+            
+            document.getElementById('classSelectorOverlay').style.display = 'none';
+            document.getElementById('mainContainer').classList.add('visible');
+            document.getElementById('classChanger').style.display = 'block';
+            document.getElementById('syncStatus').style.display = 'flex';
+            document.getElementById('classNameDisplay').textContent = 'Classe ' + CLASS_NAME;
+            document.getElementById('studentsTitle').textContent = 'Gestion des élèves de ' + CLASS_NAME;
+            
+            init();
+        }
+
+        window.changeClass = function() {
+            if (confirm('🔄 Voulez-vous changer de classe ?\n\nLes données de la classe actuelle sont sauvegardées dans Firebase.')) {
+                document.getElementById('mainContainer').classList.remove('visible');
+                document.getElementById('classSelectorOverlay').style.display = 'flex';
+                document.getElementById('classChanger').style.display = 'none';
+                document.getElementById('syncStatus').style.display = 'none';
+                document.getElementById('classNameInput').value = '';
+                document.getElementById('classNameInput').focus();
+                loadExistingClasses();
+            }
+        }
+
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && document.getElementById('classSelectorOverlay').style.display !== 'none') {
+                selectClass();
+            }
+        });
+
+        function updateSyncStatus(status, text) {
+            const syncStatus = document.getElementById('syncStatus');
+            const syncIcon = document.getElementById('syncIcon');
+            const syncText = document.getElementById('syncText');
+            
+            syncStatus.className = 'sync-status ' + status;
+            
+            if (status === 'synced') {
+                syncIcon.textContent = '✓';
+                syncText.textContent = text || 'Synchronisé';
+            } else if (status === 'syncing') {
+                syncIcon.textContent = '🔄';
+                syncText.textContent = text || 'Synchronisation...';
+            } else if (status === 'error') {
+                syncIcon.textContent = '⚠';
+                syncText.textContent = text || 'Erreur de connexion';
+            }
+        }
+
+        async function saveToFirebase() {
+            try {
+                updateSyncStatus('syncing');
+                const data = {
+                    students: students,
+                    activeMatches: activeMatches,
+                    settings: settings,
+                    lastUpdate: new Date().toISOString()
+                };
+                await database.ref('tournaments/' + CLASS_NAME).set(data);
+                updateSyncStatus('synced');
+            } catch (error) {
+                console.error('Erreur Firebase:', error);
+                updateSyncStatus('error', 'Erreur de sauvegarde');
+            }
+        }
+
+        async function loadFromFirebase() {
+            try {
+                updateSyncStatus('syncing', 'Chargement...');
+                const snapshot = await database.ref('tournaments/' + CLASS_NAME).once('value');
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    students = data.students || [];
+                    activeMatches = data.activeMatches || [];
+                    settings = { ...settings, ...(data.settings || {}) };
+                    
+                    document.getElementById('startingPoints').value = settings.startingPoints;
+                    document.getElementById('minPointsWin').value = settings.minPointsWin;
+                    document.getElementById('maxPointsWin').value = settings.maxPointsWin;
+                    document.getElementById('amplificationFactor').value = settings.amplificationFactor;
+                    document.getElementById('advantageTier1Gap').value = settings.advantageTier1Gap;
+                    document.getElementById('advantageTier1Points').value = settings.advantageTier1Points;
+                    document.getElementById('advantageTier2Gap').value = settings.advantageTier2Gap;
+                    document.getElementById('advantageTier2Points').value = settings.advantageTier2Points;
+                    document.getElementById('advantageTier3Gap').value = settings.advantageTier3Gap;
+                    document.getElementById('advantageTier3Points').value = settings.advantageTier3Points;
+                    
+                    updateSyncStatus('synced');
+                } else {
+                    students = [];
+                    updateSyncStatus('synced', 'Nouvelle classe');
+                }
+                
+                renderStudents();
+                renderRanking();
+                updatePlayerSelects();
+                renderActiveMatches();
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+                updateSyncStatus('error', 'Erreur de chargement');
+            }
+        }
+
+        function setupRealtimeListener() {
+            database.ref('tournaments/' + CLASS_NAME).on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    students = data.students || [];
+                    activeMatches = data.activeMatches || [];
+                    settings = { ...settings, ...(data.settings || {}) };
+                    
+                    renderStudents();
+                    renderRanking();
+                    updatePlayerSelects();
+                    renderActiveMatches();
+                    updateSyncStatus('synced');
+                }
+            }, (error) => {
+                console.error('Erreur listener:', error);
+                updateSyncStatus('error');
+            });
+        }
+
+        async function init() {
+            await loadFromFirebase();
+            setupRealtimeListener();
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'matches') {
+                renderActiveMatches();
+                updatePointsPreview();
+            }
+        }
+
+        function renderStudents() {
+            const grid = document.getElementById('studentsGrid');
+            
+            if (students.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: #999; padding: 40px; grid-column: 1/-1;">Aucun élève pour le moment. Cliquez sur "➕ Ajouter un élève" pour commencer.</p>';
+                return;
+            }
+            
+            grid.innerHTML = students.map((student, index) => `
+                <div class="student-item">
+                    <input type="text" value="${student.name}" onchange="window.updateStudentName(${index}, this.value)">
+                    <button onclick="window.removeStudent(${index})">✖</button>
+                </div>
+            `).join('');
+        }
+
+        async function addStudent() {
+            const name = prompt("Prénom du nouvel élève :");
+            if (name && name.trim()) {
+                students.push({
+                    name: name.trim(),
+                    points: settings.startingPoints,
+                    matchesPlayed: 0,
+                    wins: 0,
+                    losses: 0
+                });
+                await saveToFirebase();
+            }
+        }
+
+        async function removeStudent(index) {
+            if (confirm(`Supprimer ${students[index].name} ?`)) {
+                students.splice(index, 1);
+                await saveToFirebase();
+            }
+        }
+
+        async function updateStudentName(index, newName) {
+            students[index].name = newName;
+            await saveToFirebase();
+        }
+
+        async function clearAllStudents() {
+            if (confirm("⚠️ Effacer tous les élèves ? Cette action est irréversible !")) {
+                students = [];
+                await saveToFirebase();
+            }
+        }
+
+        function renderRanking() {
+            const tbody = document.getElementById('rankingBody');
+            
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #999;">Aucun élève à afficher</td></tr>';
+                return;
+            }
+            
+            const sorted = [...students].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return a.losses - b.losses;
+            });
+
+            const midPoint = Math.ceil(sorted.length / 2);
+
+            tbody.innerHTML = sorted.map((student, index) => {
+                const ratio = student.matchesPlayed > 0 ? (student.wins / student.matchesPlayed * 100).toFixed(0) : 0;
+                const isTopHalf = index < midPoint;
+                
+                return `
+                    <tr class="${isTopHalf ? 'top-half' : 'bottom-half'}">
+                        <td class="rank">#${index + 1}</td>
+                        <td><strong>${student.name}</strong></td>
+                        <td class="points">${student.points}</td>
+                        <td>${student.matchesPlayed}</td>
+                        <td style="color: #00C851; font-weight: bold;">${student.wins}</td>
+                        <td style="color: #ff4444; font-weight: bold;">${student.losses}</td>
+                        <td>${ratio}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updatePlayerSelects() {
+            const select1 = document.getElementById('player1Select');
+            const select2 = document.getElementById('player2Select');
+            
+            if (students.length === 0) {
+                select1.innerHTML = '<option value="">Aucun élève disponible</option>';
+                select2.innerHTML = '<option value="">Aucun élève disponible</option>';
+                return;
+            }
+            
+            const sorted = [...students].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.wins - a.wins;
+            });
+
+            const options = sorted.map((s, i) => 
+                `<option value="${s.name}">#${i+1} ${s.name} (${s.points} pts)</option>`
+            ).join('');
+
+            select1.innerHTML = '<option value="">-- Sélectionner --</option>' + options;
+            select2.innerHTML = '<option value="">-- Sélectionner --</option>' + options;
+        }
+
+        function calculatePoints(winnerPoints, loserPoints) {
+            const diff = winnerPoints - loserPoints;
+            
+            if (diff >= 0) {
+                return settings.minPointsWin;
+            } else {
+                const absDiff = Math.abs(diff);
+                const normalizedDiff = absDiff / 100;
+                const points = settings.minPointsWin + (settings.maxPointsWin - settings.minPointsWin) * 
+                    Math.min(1, normalizedDiff * settings.amplificationFactor);
+                return Math.round(points);
+            }
+        }
+
+        function calculateAdvantage(rank1, rank2) {
+            const rankGap = Math.abs(rank1 - rank2);
+            const lowerRankedPlayer = rank1 > rank2 ? 1 : 2;
+            
+            if (rankGap >= settings.advantageTier3Gap) {
+                return { player: lowerRankedPlayer, points: settings.advantageTier3Points };
+            } else if (rankGap >= settings.advantageTier2Gap) {
+                return { player: lowerRankedPlayer, points: settings.advantageTier2Points };
+            } else if (rankGap >= settings.advantageTier1Gap) {
+                return { player: lowerRankedPlayer, points: settings.advantageTier1Points };
+            }
+            
+            return { player: 0, points: 0 };
+        }
+
+        function getPlayerRank(playerName) {
+            const sorted = [...students].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.wins - a.wins;
+            });
+            return sorted.findIndex(s => s.name === playerName) + 1;
+        }
+
+        function updatePointsPreview() {
+            const p1Name = document.getElementById('player1Select').value;
+            const p2Name = document.getElementById('player2Select').value;
+            const previewDiv = document.getElementById('pointsPreview');
+
+            if (!p1Name || !p2Name || p1Name === p2Name) {
+                previewDiv.style.display = 'none';
+                return;
+            }
+
+            const player1 = students.find(s => s.name === p1Name);
+            const player2 = students.find(s => s.name === p2Name);
+
+            const rank1 = getPlayerRank(p1Name);
+            const rank2 = getPlayerRank(p2Name);
+
+            const pointsIfP1Wins = calculatePoints(player1.points, player2.points);
+            const pointsIfP2Wins = calculatePoints(player2.points, player1.points);
+
+            const advantage = calculateAdvantage(rank1, rank2);
+
+            document.getElementById('scenario1Player').textContent = `${player1.name} (Rang #${rank1})`;
+            document.getElementById('scenario1Points').textContent = `+${pointsIfP1Wins} points`;
+            
+            if (advantage.player === 1 && advantage.points > 0) {
+                document.getElementById('scenario1Advantage').innerHTML = 
+                    `<div class="advantage-badge">🎯 Démarre avec +${advantage.points} pts au score</div>`;
+            } else {
+                document.getElementById('scenario1Advantage').innerHTML = '';
+            }
+
+            document.getElementById('scenario2Player').textContent = `${player2.name} (Rang #${rank2})`;
+            document.getElementById('scenario2Points').textContent = `+${pointsIfP2Wins} points`;
+            
+            if (advantage.player === 2 && advantage.points > 0) {
+                document.getElementById('scenario2Advantage').innerHTML = 
+                    `<div class="advantage-badge">🎯 Démarre avec +${advantage.points} pts au score</div>`;
+            } else {
+                document.getElementById('scenario2Advantage').innerHTML = '';
+            }
+
+            previewDiv.style.display = 'block';
+        }
+
+        async function startMatch() {
+            if (students.length < 2) {
+                alert("❌ Il faut au moins 2 élèves pour lancer un match !");
+                return;
+            }
+            
+            const p1Name = document.getElementById('player1Select').value;
+            const p2Name = document.getElementById('player2Select').value;
+
+            if (!p1Name || !p2Name) {
+                alert("Veuillez sélectionner deux joueurs");
+                return;
+            }
+
+            if (p1Name === p2Name) {
+                alert("Un joueur ne peut pas jouer contre lui-même !");
+                return;
+            }
+
+            if (activeMatches.some(m => m.player1 === p1Name || m.player2 === p1Name)) {
+                alert(`${p1Name} est déjà en train de jouer un match !`);
+                return;
+            }
+            if (activeMatches.some(m => m.player1 === p2Name || m.player2 === p2Name)) {
+                alert(`${p2Name} est déjà en train de jouer un match !`);
+                return;
+            }
+
+            const player1 = students.find(s => s.name === p1Name);
+            const player2 = students.find(s => s.name === p2Name);
+
+            const rank1 = getPlayerRank(p1Name);
+            const rank2 = getPlayerRank(p2Name);
+
+            const pointsIfP1Wins = calculatePoints(player1.points, player2.points);
+            const pointsIfP2Wins = calculatePoints(player2.points, player1.points);
+
+            const advantage = calculateAdvantage(rank1, rank2);
+
+            activeMatches.push({
+                player1: p1Name,
+                player2: p2Name,
+                rank1: rank1,
+                rank2: rank2,
+                pointsIfP1Wins: pointsIfP1Wins,
+                pointsIfP2Wins: pointsIfP2Wins,
+                advantagePlayer: advantage.player,
+                advantagePoints: advantage.points,
+                startTime: new Date().toISOString()
+            });
+
+            await saveToFirebase();
+            
+            document.getElementById('player1Select').value = '';
+            document.getElementById('player2Select').value = '';
+            updatePointsPreview();
+        }
+
+        function renderActiveMatches() {
+            const container = document.getElementById('activeMatches');
+            
+            if (activeMatches.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Aucun match en cours</p>';
+                return;
+            }
+
+            container.innerHTML = activeMatches.map((match, index) => {
+                let advantageText = '';
+                if (match.advantagePoints > 0) {
+                    const advantagedPlayer = match.advantagePlayer === 1 ? match.player1 : match.player2;
+                    advantageText = `<div class="advantage-info">🎯 ${advantagedPlayer} démarre avec +${match.advantagePoints} pts au score (écart de classement)</div>`;
+                }
+
+                return `
+                <div class="match-card">
+                    <div class="players">${match.player1} (#${match.rank1}) 🆚 ${match.player2} (#${match.rank2})</div>
+                    <div style="text-align: center; margin-bottom: 8px; font-size: 0.8em; opacity: 0.9;">
+                        Match ${index + 1} | 11 points
+                    </div>
+                    ${advantageText}
+                    <div class="points-info">
+                        <div>⚡ Points en jeu :</div>
+                        <div style="margin-top: 5px;">
+                            <strong>${match.player1}</strong> : +${match.pointsIfP1Wins} pts si victoire<br>
+                            <strong>${match.player2}</strong> : +${match.pointsIfP2Wins} pts si victoire
+                        </div>
+                    </div>
+                    <div class="match-buttons">
+                        <button class="winner-btn" onclick="window.declareWinner(${index}, '${match.player1}')">
+                            🏆 ${match.player1} gagne
+                        </button>
+                        <button class="winner-btn" onclick="window.declareWinner(${index}, '${match.player2}')">
+                            🏆 ${match.player2} gagne
+                        </button>
+                    </div>
+                    <button onclick="window.cancelMatch(${index})" style="width: 100%; margin-top: 10px; background: #ff4444; color: white;">
+                        ❌ Annuler
+                    </button>
+                </div>
+            `;
+            }).join('');
+        }
+
+        async function declareWinner(matchIndex, winnerName) {
+            const match = activeMatches[matchIndex];
+            const loserName = match.player1 === winnerName ? match.player2 : match.player1;
+
+            const winner = students.find(s => s.name === winnerName);
+            const loser = students.find(s => s.name === loserName);
+
+            const pointsGained = winnerName === match.player1 ? match.pointsIfP1Wins : match.pointsIfP2Wins;
+
+            winner.points += pointsGained;
+            winner.wins++;
+            winner.matchesPlayed++;
+
+            loser.losses++;
+            loser.matchesPlayed++;
+
+            activeMatches.splice(matchIndex, 1);
+
+            await saveToFirebase();
+
+            let advantageMsg = '';
+            if (match.advantagePoints > 0) {
+                const advantagedPlayer = match.advantagePlayer === 1 ? match.player1 : match.player2;
+                advantageMsg = `\n\n🎯 ${advantagedPlayer} avait +${match.advantagePoints} pts d'avantage au score`;
+            }
+
+            alert(`🏆 ${winnerName} remporte le match !\n\n+${pointsGained} points pour ${winnerName}\nNouveau total : ${winner.points} points${advantageMsg}`);
+        }
+
+        async function cancelMatch(matchIndex) {
+            if (confirm("Annuler ce match ?")) {
+                activeMatches.splice(matchIndex, 1);
+                await saveToFirebase();
+            }
+        }
+
+        async function saveSettings() {
+            settings.startingPoints = parseInt(document.getElementById('startingPoints').value);
+            settings.minPointsWin = parseInt(document.getElementById('minPointsWin').value);
+            settings.maxPointsWin = parseInt(document.getElementById('maxPointsWin').value);
+            settings.amplificationFactor = parseFloat(document.getElementById('amplificationFactor').value);
+            settings.advantageTier1Gap = parseInt(document.getElementById('advantageTier1Gap').value);
+            settings.advantageTier1Points = parseInt(document.getElementById('advantageTier1Points').value);
+            settings.advantageTier2Gap = parseInt(document.getElementById('advantageTier2Gap').value);
+            settings.advantageTier2Points = parseInt(document.getElementById('advantageTier2Points').value);
+            settings.advantageTier3Gap = parseInt(document.getElementById('advantageTier3Gap').value);
+            settings.advantageTier3Points = parseInt(document.getElementById('advantageTier3Points').value);
+
+            await saveToFirebase();
+            alert("✅ Paramètres sauvegardés !");
+        }
+
+        async function resetTournament() {
+            if (confirm("⚠️ Réinitialiser tout le tournoi ? Tous les scores et matchs seront perdus !")) {
+                students.forEach(s => {
+                    s.points = settings.startingPoints;
+                    s.matchesPlayed = 0;
+                    s.wins = 0;
+                    s.losses = 0;
+                });
+                activeMatches = [];
+                await saveToFirebase();
+                alert("✅ Tournoi réinitialisé !");
+            }
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('mainContainer');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    alert("Impossible de passer en plein écran");
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function exportData() {
+            const data = {
+                class: CLASS_NAME,
+                students: students,
+                activeMatches: activeMatches,
+                settings: settings,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tournoi_badminton_${CLASS_NAME}_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        window.switchTab = switchTab;
+        window.addStudent = addStudent;
+        window.removeStudent = removeStudent;
+        window.updateStudentName = updateStudentName;
+        window.clearAllStudents = clearAllStudents;
+        window.updatePointsPreview = updatePointsPreview;
+        window.startMatch = startMatch;
+        window.declareWinner = declareWinner;
+        window.cancelMatch = cancelMatch;
+        window.saveSettings = saveSettings;
+        window.resetTournament = resetTournament;
+        window.toggleFullscreen = toggleFullscreen;
+        window.exportData = exportData;
+
+        window.onload = function() {
+            loadExistingClasses();
+            const lastClass = localStorage.getItem('lastClassName');
+            if (lastClass) {
+                document.getElementById('classNameInput').value = lastClass;
+            }
+            document.getElementById('classNameInput').focus();
+        }
+    </script>
+</body>
+</html>
