@@ -171,6 +171,42 @@
         .tab-content { display: none; padding: 15px; }
         .tab-content.active { display: block; }
 
+        .available-players-section {
+            background: #e8f5e9; padding: 20px;
+            border-radius: 10px; margin-bottom: 25px;
+            border: 2px solid #00C851;
+        }
+
+        .available-players-section h3 {
+            color: #00C851; margin-bottom: 15px;
+            font-size: 1.2em; display: flex;
+            align-items: center; gap: 8px;
+        }
+
+        .available-players-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .available-player-item {
+            background: white; padding: 10px;
+            border-radius: 8px; border: 2px solid #00C851;
+            font-size: 0.9em;
+        }
+
+        .available-player-item .player-rank {
+            font-weight: bold; color: #667eea;
+        }
+
+        .available-player-item .player-name {
+            font-weight: bold; color: #333;
+        }
+
+        .available-player-item .player-points {
+            color: #00C851; font-size: 0.85em;
+        }
+
         .students-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -250,6 +286,10 @@
             border: 2px solid #667eea; border-radius: 8px; margin-top: 10px;
         }
 
+        .player-select select option.busy {
+            color: #999; font-style: italic;
+        }
+
         .vs { font-size: 2em; font-weight: bold; color: #667eea; }
 
         .points-preview {
@@ -278,6 +318,11 @@
 
         .scenario .points-gain {
             font-size: 1.5em; font-weight: bold; color: #00C851;
+        }
+
+        .scenario .points-loss {
+            font-size: 1.2em; font-weight: bold; color: #ff4444;
+            margin-top: 5px;
         }
 
         .scenario .advantage-badge {
@@ -343,7 +388,7 @@
             margin-bottom: 10px; color: #667eea;
         }
 
-        .setting-item input {
+        .setting-item input[type="number"] {
             width: 100%; padding: 12px; border: 2px solid #ddd;
             border-radius: 8px; font-size: 16px;
         }
@@ -351,6 +396,33 @@
         .setting-item small {
             display: block; margin-top: 8px;
             color: #666; font-style: italic;
+        }
+
+        .checkbox-setting {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 15px; cursor: pointer;
+        }
+
+        .checkbox-setting input[type="checkbox"] {
+            width: 20px; height: 20px; cursor: pointer;
+        }
+
+        .checkbox-setting label {
+            margin: 0; cursor: pointer; font-weight: bold;
+        }
+
+        .negative-points-settings {
+            background: #ffebee; padding: 20px;
+            border-radius: 10px; border: 2px solid #ff4444;
+            margin-top: 20px;
+        }
+
+        .negative-points-settings h3 {
+            color: #ff4444; margin-bottom: 15px;
+        }
+
+        .negative-points-settings.disabled {
+            opacity: 0.5; pointer-events: none;
         }
 
         .advantage-settings {
@@ -409,6 +481,9 @@
             h1 { font-size: 1.8em; }
             .classes-grid {
                 grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+            .available-players-list {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -523,6 +598,11 @@
                 </ul>
             </div>
 
+            <div id="availablePlayersSection" style="display: none;" class="available-players-section">
+                <h3><span>🟢</span> Joueurs disponibles (<span id="availableCount">0</span>)</h3>
+                <div class="available-players-list" id="availablePlayersList"></div>
+            </div>
+
             <div class="match-setup">
                 <div class="player-select">
                     <label><strong>Joueur 1</strong></label>
@@ -546,12 +626,14 @@
                         <div class="player-name" id="scenario1Player"></div>
                         <div>Si victoire :</div>
                         <div class="points-gain" id="scenario1Points"></div>
+                        <div class="points-loss" id="scenario1Loss"></div>
                         <div id="scenario1Advantage"></div>
                     </div>
                     <div class="scenario">
                         <div class="player-name" id="scenario2Player"></div>
                         <div>Si victoire :</div>
                         <div class="points-gain" id="scenario2Points"></div>
+                        <div class="points-loss" id="scenario2Loss"></div>
                         <div id="scenario2Advantage"></div>
                     </div>
                 </div>
@@ -561,7 +643,7 @@
                 ▶️ Lancer le match
             </button>
 
-            <h2 style="margin-top: 40px; color: #667eea;">Matchs en cours</h2>
+            <h2 style="margin-top: 40px; color: #667eea;">Matchs en cours (<span id="matchCount">0</span>)</h2>
             <div class="active-matches" id="activeMatches">
             </div>
         </div>
@@ -609,6 +691,56 @@
                     <label>Facteur d'amplification</label>
                     <input type="number" id="amplificationFactor" value="0.3" min="0.1" max="2" step="0.1">
                     <small>Plus ce nombre est élevé, plus l'écart de points influence les gains (0.1 = faible, 1.0 = fort)</small>
+                </div>
+            </div>
+
+            <div class="negative-points-settings" id="negativePointsSettings">
+                <h3>⚠️ Système de points négatifs en cas de défaite</h3>
+                
+                <div class="checkbox-setting">
+                    <input type="checkbox" id="enableNegativePoints" onchange="toggleNegativePoints()">
+                    <label for="enableNegativePoints">Activer les points négatifs pour la moitié haute du classement</label>
+                </div>
+
+                <div id="negativePointsConfig" style="display: none;">
+                    <div class="setting-item">
+                        <label>Type de pénalité</label>
+                        <select id="negativePointsType" onchange="updateNegativePointsHelp()" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                            <option value="fixed">Fixe - Montant constant</option>
+                            <option value="proportional">Proportionnelle - Selon l'écart de classement</option>
+                        </select>
+                        <small>Fixe = toujours le même nombre de points perdus | Proportionnelle = varie selon l'adversaire</small>
+                    </div>
+
+                    <div class="setting-item" id="fixedNegativePointsField">
+                        <label>Points perdus en cas de défaite (Fixe)</label>
+                        <input type="number" id="negativePointsValue" value="5" min="1" max="50">
+                        <small>Nombre de points perdus par les joueurs de la moitié haute en cas de défaite</small>
+                    </div>
+
+                    <div id="proportionalNegativePointsFields" style="display: none;">
+                        <div class="setting-item">
+                            <label>Points minimum perdus (Proportionnel)</label>
+                            <input type="number" id="negativePointsMin" value="3" min="1" max="50">
+                            <small>Minimum de points perdus (contre un adversaire beaucoup moins bien classé)</small>
+                        </div>
+
+                        <div class="setting-item">
+                            <label>Points maximum perdus (Proportionnel)</label>
+                            <input type="number" id="negativePointsMax" value="15" min="1" max="100">
+                            <small>Maximum de points perdus (contre un adversaire beaucoup mieux classé)</small>
+                        </div>
+
+                        <div class="setting-item">
+                            <label>Facteur d'amplification des pertes</label>
+                            <input type="number" id="negativePointsAmplification" value="0.3" min="0.1" max="2" step="0.1">
+                            <small>Plus ce nombre est élevé, plus l'écart de classement influence les pertes (0.1 = faible, 1.0 = fort)</small>
+                        </div>
+                    </div>
+
+                    <div class="alert">
+                        <strong>ℹ️ Règle :</strong> Seuls les joueurs classés dans la <strong>moitié supérieure</strong> perdent des points en cas de défaite. Les joueurs de la moitié inférieure ne perdent jamais de points pour maintenir leur motivation.
+                    </div>
                 </div>
             </div>
 
@@ -699,10 +831,15 @@
             advantageTier2Gap: 10,
             advantageTier2Points: 5,
             advantageTier3Gap: 15,
-            advantageTier3Points: 7
+            advantageTier3Points: 7,
+            enableNegativePoints: false,
+            negativePointsType: 'fixed',
+            negativePointsValue: 5,
+            negativePointsMin: 3,
+            negativePointsMax: 15,
+            negativePointsAmplification: 0.3
         };
 
-        // Charger les classes existantes
         async function loadExistingClasses() {
             try {
                 const snapshot = await database.ref('tournaments').once('value');
@@ -764,6 +901,28 @@
             }
         });
 
+        function toggleNegativePoints() {
+            const enabled = document.getElementById('enableNegativePoints').checked;
+            document.getElementById('negativePointsConfig').style.display = enabled ? 'block' : 'none';
+            if (enabled) {
+                updateNegativePointsHelp();
+            }
+        }
+
+        function updateNegativePointsHelp() {
+            const type = document.getElementById('negativePointsType').value;
+            const fixedField = document.getElementById('fixedNegativePointsField');
+            const proportionalFields = document.getElementById('proportionalNegativePointsFields');
+            
+            if (type === 'fixed') {
+                fixedField.style.display = 'block';
+                proportionalFields.style.display = 'none';
+            } else {
+                fixedField.style.display = 'none';
+                proportionalFields.style.display = 'block';
+            }
+        }
+
         function updateSyncStatus(status, text) {
             const syncStatus = document.getElementById('syncStatus');
             const syncIcon = document.getElementById('syncIcon');
@@ -821,6 +980,15 @@
                     document.getElementById('advantageTier2Points').value = settings.advantageTier2Points;
                     document.getElementById('advantageTier3Gap').value = settings.advantageTier3Gap;
                     document.getElementById('advantageTier3Points').value = settings.advantageTier3Points;
+                    document.getElementById('enableNegativePoints').checked = settings.enableNegativePoints || false;
+                    document.getElementById('negativePointsType').value = settings.negativePointsType || 'fixed';
+                    document.getElementById('negativePointsValue').value = settings.negativePointsValue || 5;
+                    document.getElementById('negativePointsMin').value = settings.negativePointsMin || 3;
+                    document.getElementById('negativePointsMax').value = settings.negativePointsMax || 15;
+                    document.getElementById('negativePointsAmplification').value = settings.negativePointsAmplification || 0.3;
+                    
+                    toggleNegativePoints();
+                    updateNegativePointsHelp();
                     
                     updateSyncStatus('synced');
                 } else {
@@ -832,6 +1000,7 @@
                 renderRanking();
                 updatePlayerSelects();
                 renderActiveMatches();
+                renderAvailablePlayers();
             } catch (error) {
                 console.error('Erreur de chargement:', error);
                 updateSyncStatus('error', 'Erreur de chargement');
@@ -850,6 +1019,7 @@
                     renderRanking();
                     updatePlayerSelects();
                     renderActiveMatches();
+                    renderAvailablePlayers();
                     updateSyncStatus('synced');
                 }
             }, (error) => {
@@ -872,8 +1042,47 @@
 
             if (tabName === 'matches') {
                 renderActiveMatches();
+                renderAvailablePlayers();
                 updatePointsPreview();
             }
+        }
+
+        function renderAvailablePlayers() {
+            const section = document.getElementById('availablePlayersSection');
+            const list = document.getElementById('availablePlayersList');
+            const countSpan = document.getElementById('availableCount');
+
+            if (activeMatches.length < 7) {
+                section.style.display = 'none';
+                return;
+            }
+
+            const busyPlayers = new Set();
+            activeMatches.forEach(match => {
+                busyPlayers.add(match.player1);
+                busyPlayers.add(match.player2);
+            });
+
+            const availablePlayers = students.filter(s => !busyPlayers.has(s.name));
+            const sorted = [...availablePlayers].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.wins - a.wins;
+            });
+
+            countSpan.textContent = sorted.length;
+            
+            list.innerHTML = sorted.map((s, i) => {
+                const rank = getPlayerRank(s.name);
+                return `
+                    <div class="available-player-item">
+                        <span class="player-rank">#${rank}</span>
+                        <span class="player-name">${s.name}</span>
+                        <span class="player-points">(${s.points} pts)</span>
+                    </div>
+                `;
+            }).join('');
+
+            section.style.display = 'block';
         }
 
         function renderStudents() {
@@ -969,14 +1178,21 @@
                 return;
             }
             
+            const busyPlayers = new Set();
+            activeMatches.forEach(match => {
+                busyPlayers.add(match.player1);
+                busyPlayers.add(match.player2);
+            });
+
             const sorted = [...students].sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
                 return b.wins - a.wins;
             });
 
-            const options = sorted.map((s, i) => 
-                `<option value="${s.name}">#${i+1} ${s.name} (${s.points} pts)</option>`
-            ).join('');
+            const options = sorted.map((s, i) => {
+                const isBusy = busyPlayers.has(s.name);
+                return `<option value="${s.name}" class="${isBusy ? 'busy' : ''}" ${isBusy ? 'disabled' : ''}>#${i+1} ${s.name} (${s.points} pts)${isBusy ? ' - EN MATCH' : ''}</option>`;
+            }).join('');
 
             select1.innerHTML = '<option value="">-- Sélectionner --</option>' + options;
             select2.innerHTML = '<option value="">-- Sélectionner --</option>' + options;
@@ -993,6 +1209,43 @@
                 const points = settings.minPointsWin + (settings.maxPointsWin - settings.minPointsWin) * 
                     Math.min(1, normalizedDiff * settings.amplificationFactor);
                 return Math.round(points);
+            }
+        }
+
+        function calculateNegativePoints(loserRank, winnerPoints, loserPoints) {
+            const totalPlayers = students.length;
+            const midPoint = Math.ceil(totalPlayers / 2);
+            
+            // Si le perdant est dans la moitié basse, pas de points négatifs
+            if (loserRank > midPoint) {
+                return 0;
+            }
+
+            // Si les points négatifs ne sont pas activés
+            if (!settings.enableNegativePoints) {
+                return 0;
+            }
+
+            if (settings.negativePointsType === 'fixed') {
+                // Mode fixe : toujours le même nombre de points
+                return settings.negativePointsValue;
+            } else {
+                // Mode proportionnel : selon l'écart de classement
+                const diff = loserPoints - winnerPoints;
+                
+                if (diff <= 0) {
+                    // Le perdant avait moins ou autant de points que le gagnant
+                    // → perte minimale
+                    return settings.negativePointsMin;
+                } else {
+                    // Le perdant avait plus de points que le gagnant
+                    // → perte proportionnelle à l'écart
+                    const normalizedDiff = diff / 100;
+                    const points = settings.negativePointsMin + 
+                        (settings.negativePointsMax - settings.negativePointsMin) * 
+                        Math.min(1, normalizedDiff * settings.negativePointsAmplification);
+                    return Math.round(points);
+                }
             }
         }
 
@@ -1038,10 +1291,20 @@
             const pointsIfP1Wins = calculatePoints(player1.points, player2.points);
             const pointsIfP2Wins = calculatePoints(player2.points, player1.points);
 
+            const negativeIfP1Loses = calculateNegativePoints(rank1, player2.points, player1.points);
+            const negativeIfP2Loses = calculateNegativePoints(rank2, player1.points, player2.points);
+
             const advantage = calculateAdvantage(rank1, rank2);
 
             document.getElementById('scenario1Player').textContent = `${player1.name} (Rang #${rank1})`;
             document.getElementById('scenario1Points').textContent = `+${pointsIfP1Wins} points`;
+            
+            if (negativeIfP1Loses > 0) {
+                document.getElementById('scenario1Loss').textContent = `Si défaite : -${negativeIfP1Loses} points`;
+                document.getElementById('scenario1Loss').style.display = 'block';
+            } else {
+                document.getElementById('scenario1Loss').style.display = 'none';
+            }
             
             if (advantage.player === 1 && advantage.points > 0) {
                 document.getElementById('scenario1Advantage').innerHTML = 
@@ -1052,6 +1315,13 @@
 
             document.getElementById('scenario2Player').textContent = `${player2.name} (Rang #${rank2})`;
             document.getElementById('scenario2Points').textContent = `+${pointsIfP2Wins} points`;
+            
+            if (negativeIfP2Loses > 0) {
+                document.getElementById('scenario2Loss').textContent = `Si défaite : -${negativeIfP2Loses} points`;
+                document.getElementById('scenario2Loss').style.display = 'block';
+            } else {
+                document.getElementById('scenario2Loss').style.display = 'none';
+            }
             
             if (advantage.player === 2 && advantage.points > 0) {
                 document.getElementById('scenario2Advantage').innerHTML = 
@@ -1099,6 +1369,9 @@
 
             const pointsIfP1Wins = calculatePoints(player1.points, player2.points);
             const pointsIfP2Wins = calculatePoints(player2.points, player1.points);
+            
+            const negativeIfP1Loses = calculateNegativePoints(rank1, player2.points, player1.points);
+            const negativeIfP2Loses = calculateNegativePoints(rank2, player1.points, player2.points);
 
             const advantage = calculateAdvantage(rank1, rank2);
 
@@ -1109,6 +1382,8 @@
                 rank2: rank2,
                 pointsIfP1Wins: pointsIfP1Wins,
                 pointsIfP2Wins: pointsIfP2Wins,
+                negativeIfP1Loses: negativeIfP1Loses,
+                negativeIfP2Loses: negativeIfP2Loses,
                 advantagePlayer: advantage.player,
                 advantagePoints: advantage.points,
                 startTime: new Date().toISOString()
@@ -1123,6 +1398,7 @@
 
         function renderActiveMatches() {
             const container = document.getElementById('activeMatches');
+            document.getElementById('matchCount').textContent = activeMatches.length;
             
             if (activeMatches.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Aucun match en cours</p>';
@@ -1136,6 +1412,20 @@
                     advantageText = `<div class="advantage-info">🎯 ${advantagedPlayer} démarre avec +${match.advantagePoints} pts au score (écart de classement)</div>`;
                 }
 
+                let negativeText = '';
+                if (match.negativeIfP1Loses > 0 || match.negativeIfP2Loses > 0) {
+                    const parts = [];
+                    if (match.negativeIfP1Loses > 0) {
+                        parts.push(`${match.player1}: -${match.negativeIfP1Loses} pts si défaite`);
+                    }
+                    if (match.negativeIfP2Loses > 0) {
+                        parts.push(`${match.player2}: -${match.negativeIfP2Loses} pts si défaite`);
+                    }
+                    if (parts.length > 0) {
+                        negativeText = `<div style="background: rgba(255, 68, 68, 0.2); padding: 5px; border-radius: 5px; margin-bottom: 6px; font-size: 0.75em; text-align: center; border: 1px solid rgba(255, 68, 68, 0.5);">⚠️ ${parts.join(' | ')}</div>`;
+                    }
+                }
+
                 return `
                 <div class="match-card">
                     <div class="players">${match.player1} (#${match.rank1}) 🆚 ${match.player2} (#${match.rank2})</div>
@@ -1143,6 +1433,7 @@
                         Match ${index + 1} | 11 points
                     </div>
                     ${advantageText}
+                    ${negativeText}
                     <div class="points-info">
                         <div>⚡ Points en jeu :</div>
                         <div style="margin-top: 5px;">
@@ -1174,11 +1465,13 @@
             const loser = students.find(s => s.name === loserName);
 
             const pointsGained = winnerName === match.player1 ? match.pointsIfP1Wins : match.pointsIfP2Wins;
+            const pointsLost = winnerName === match.player1 ? match.negativeIfP2Loses : match.negativeIfP1Loses;
 
             winner.points += pointsGained;
             winner.wins++;
             winner.matchesPlayed++;
 
+            loser.points -= pointsLost;
             loser.losses++;
             loser.matchesPlayed++;
 
@@ -1189,10 +1482,15 @@
             let advantageMsg = '';
             if (match.advantagePoints > 0) {
                 const advantagedPlayer = match.advantagePlayer === 1 ? match.player1 : match.player2;
-                advantageMsg = `\n\n🎯 ${advantagedPlayer} avait +${match.advantagePoints} pts d'avantage au score`;
+                advantageMsg = `\n🎯 ${advantagedPlayer} avait +${match.advantagePoints} pts d'avantage au score`;
             }
 
-            alert(`🏆 ${winnerName} remporte le match !\n\n+${pointsGained} points pour ${winnerName}\nNouveau total : ${winner.points} points${advantageMsg}`);
+            let negativeMsg = '';
+            if (pointsLost > 0) {
+                negativeMsg = `\n⚠️ ${loserName} perd ${pointsLost} points (moitié haute)`;
+            }
+
+            alert(`🏆 ${winnerName} remporte le match !\n\n+${pointsGained} points pour ${winnerName}\nNouveau total : ${winner.points} points${negativeMsg}${advantageMsg}`);
         }
 
         async function cancelMatch(matchIndex) {
@@ -1213,6 +1511,12 @@
             settings.advantageTier2Points = parseInt(document.getElementById('advantageTier2Points').value);
             settings.advantageTier3Gap = parseInt(document.getElementById('advantageTier3Gap').value);
             settings.advantageTier3Points = parseInt(document.getElementById('advantageTier3Points').value);
+            settings.enableNegativePoints = document.getElementById('enableNegativePoints').checked;
+            settings.negativePointsType = document.getElementById('negativePointsType').value;
+            settings.negativePointsValue = parseInt(document.getElementById('negativePointsValue').value);
+            settings.negativePointsMin = parseInt(document.getElementById('negativePointsMin').value);
+            settings.negativePointsMax = parseInt(document.getElementById('negativePointsMax').value);
+            settings.negativePointsAmplification = parseFloat(document.getElementById('negativePointsAmplification').value);
 
             await saveToFirebase();
             alert("✅ Paramètres sauvegardés !");
