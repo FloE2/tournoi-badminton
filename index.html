@@ -219,6 +219,12 @@
             border-radius: 8px; border: 2px solid #e0e0e0;
         }
 
+        .student-item.absent {
+            background: #ffebee;
+            border-color: #ff4444;
+            opacity: 0.7;
+        }
+
         .student-item input {
             flex: 1; padding: 8px; border: 1px solid #ddd;
             border-radius: 5px; font-size: 14px;
@@ -231,6 +237,33 @@
         }
 
         .student-item button:hover { background: #cc0000; }
+
+        .student-item .absent-btn {
+            background: #ff9800;
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+
+        .student-item .absent-btn:hover {
+            background: #f57c00;
+        }
+
+        .student-item.absent .absent-btn {
+            background: #00C851;
+        }
+
+        .student-item.absent .absent-btn:hover {
+            background: #007E33;
+        }
+
+        .absent-badge {
+            background: #ff4444;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
 
         .buttons-row {
             display: flex; gap: 15px;
@@ -550,9 +583,19 @@
 
         <div id="ranking" class="tab-content active">
             <div class="buttons-row">
+                <button class="btn btn-primary" onclick="newSession()">📅 Nouvelle séance</button>
                 <button class="btn btn-primary" onclick="toggleFullscreen()">🖥️ Plein Écran</button>
                 <button class="btn btn-success" onclick="exportData()">💾 Exporter</button>
                 <button class="btn btn-danger" onclick="resetTournament()">🔄 Réinitialiser</button>
+            </div>
+
+            <div class="info-box" id="sessionInfo" style="display: none;">
+                <strong>📊 Informations sur le cycle :</strong>
+                <p style="margin-top: 8px;">
+                    Séance actuelle : <strong><span id="currentSession">1</span></strong> | 
+                    Total d'élèves : <strong><span id="totalStudents">0</span></strong> | 
+                    Présents aujourd'hui : <strong><span id="presentToday">0</span></strong>
+                </p>
             </div>
 
             <div class="legend">
@@ -576,6 +619,8 @@
                         <th>Prénom</th>
                         <th>Points</th>
                         <th>Matchs</th>
+                        <th>Présences</th>
+                        <th>M/S</th>
                         <th>Victoires</th>
                         <th>Défaites</th>
                         <th>Ratio V/D</th>
@@ -821,6 +866,7 @@
         let CLASS_NAME = '';
         let students = [];
         let activeMatches = [];
+        let currentSession = 1;
         let settings = {
             startingPoints: 100,
             minPointsWin: 5,
@@ -949,6 +995,7 @@
                     students: students,
                     activeMatches: activeMatches,
                     settings: settings,
+                    currentSession: currentSession,
                     lastUpdate: new Date().toISOString()
                 };
                 await database.ref('tournaments/' + CLASS_NAME).set(data);
@@ -969,6 +1016,7 @@
                     students = data.students || [];
                     activeMatches = data.activeMatches || [];
                     settings = { ...settings, ...(data.settings || {}) };
+                    currentSession = data.currentSession || 1;
                     
                     document.getElementById('startingPoints').value = settings.startingPoints;
                     document.getElementById('minPointsWin').value = settings.minPointsWin;
@@ -1014,12 +1062,14 @@
                     students = data.students || [];
                     activeMatches = data.activeMatches || [];
                     settings = { ...settings, ...(data.settings || {}) };
+                    currentSession = data.currentSession || 1;
                     
                     renderStudents();
                     renderRanking();
                     updatePlayerSelects();
                     renderActiveMatches();
                     renderAvailablePlayers();
+                    updateSessionInfo();
                     updateSyncStatus('synced');
                 }
             }, (error) => {
@@ -1031,6 +1081,49 @@
         async function init() {
             await loadFromFirebase();
             setupRealtimeListener();
+            updateSessionInfo();
+        }
+
+        function updateSessionInfo() {
+            const presentCount = students.filter(s => !s.absent).length;
+            document.getElementById('currentSession').textContent = currentSession;
+            document.getElementById('totalStudents').textContent = students.length;
+            document.getElementById('presentToday').textContent = presentCount;
+            
+            if (students.length > 0) {
+                document.getElementById('sessionInfo').style.display = 'block';
+            }
+        }
+
+        async function newSession() {
+            if (students.length === 0) {
+                alert("❌ Aucun élève enregistré !");
+                return;
+            }
+
+            const presentCount = students.filter(s => !s.absent).length;
+            
+            if (!confirm(`📅 Nouvelle séance ?\n\n✅ Cela va incrémenter le compteur de présence pour les ${presentCount} élèves PRÉSENTS.\n\n⚠️ Assurez-vous d'avoir marqué les absents AVANT de cliquer sur OK.`)) {
+                return;
+            }
+
+            currentSession++;
+            
+            students.forEach(student => {
+                if (!student.absent) {
+                    student.sessionsPresent = (student.sessionsPresent || 0) + 1;
+                }
+            });
+
+            await saveToFirebase();
+            updateSessionInfo();
+            alert(`✅ Séance ${currentSession} enregistrée !\n\n${presentCount} élèves marqués présents.`);
+        }
+
+        async function toggleAbsent(index) {
+            students[index].absent = !students[index].absent;
+            await saveToFirebase();
+            updateSessionInfo();
         }
 
         function switchTab(tabName) {
@@ -1063,7 +1156,8 @@
                 busyPlayers.add(match.player2);
             });
 
-            const availablePlayers = students.filter(s => !busyPlayers.has(s.name));
+            // Filtrer les présents et disponibles
+            const availablePlayers = students.filter(s => !busyPlayers.has(s.name) && !s.absent);
             const sorted = [...availablePlayers].sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
                 return b.wins - a.wins;
@@ -1094,8 +1188,12 @@
             }
             
             grid.innerHTML = students.map((student, index) => `
-                <div class="student-item">
+                <div class="student-item ${student.absent ? 'absent' : ''}">
                     <input type="text" value="${student.name}" onchange="window.updateStudentName(${index}, this.value)">
+                    ${student.absent ? '<span class="absent-badge">ABSENT</span>' : ''}
+                    <button class="absent-btn" onclick="window.toggleAbsent(${index})" title="${student.absent ? 'Marquer présent' : 'Marquer absent'}">
+                        ${student.absent ? '✓' : '🚫'}
+                    </button>
                     <button onclick="window.removeStudent(${index})">✖</button>
                 </div>
             `).join('');
@@ -1109,9 +1207,12 @@
                     points: settings.startingPoints,
                     matchesPlayed: 0,
                     wins: 0,
-                    losses: 0
+                    losses: 0,
+                    sessionsPresent: 0,
+                    absent: false
                 });
                 await saveToFirebase();
+                updateSessionInfo();
             }
         }
 
@@ -1138,7 +1239,7 @@
             const tbody = document.getElementById('rankingBody');
             
             if (students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #999;">Aucun élève à afficher</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #999;">Aucun élève à afficher</td></tr>';
                 return;
             }
             
@@ -1153,13 +1254,18 @@
             tbody.innerHTML = sorted.map((student, index) => {
                 const ratio = student.matchesPlayed > 0 ? (student.wins / student.matchesPlayed * 100).toFixed(0) : 0;
                 const isTopHalf = index < midPoint;
+                const sessionsPresent = student.sessionsPresent || 0;
+                const matchesPerSession = sessionsPresent > 0 ? (student.matchesPlayed / sessionsPresent).toFixed(1) : '0.0';
+                const absentBadge = student.absent ? ' <span class="absent-badge" style="font-size: 0.7em;">ABSENT</span>' : '';
                 
                 return `
-                    <tr class="${isTopHalf ? 'top-half' : 'bottom-half'}">
+                    <tr class="${isTopHalf ? 'top-half' : 'bottom-half'}" style="${student.absent ? 'opacity: 0.6;' : ''}">
                         <td class="rank">#${index + 1}</td>
-                        <td><strong>${student.name}</strong></td>
+                        <td><strong>${student.name}</strong>${absentBadge}</td>
                         <td class="points">${student.points}</td>
                         <td>${student.matchesPlayed}</td>
+                        <td><strong>${sessionsPresent}/${currentSession}</strong></td>
+                        <td style="color: #667eea; font-weight: bold;">${matchesPerSession}</td>
                         <td style="color: #00C851; font-weight: bold;">${student.wins}</td>
                         <td style="color: #ff4444; font-weight: bold;">${student.losses}</td>
                         <td>${ratio}%</td>
@@ -1184,14 +1290,18 @@
                 busyPlayers.add(match.player2);
             });
 
-            const sorted = [...students].sort((a, b) => {
+            // Filtrer les élèves présents uniquement
+            const presentStudents = students.filter(s => !s.absent);
+            
+            const sorted = [...presentStudents].sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
                 return b.wins - a.wins;
             });
 
             const options = sorted.map((s, i) => {
                 const isBusy = busyPlayers.has(s.name);
-                return `<option value="${s.name}" class="${isBusy ? 'busy' : ''}" ${isBusy ? 'disabled' : ''}>#${i+1} ${s.name} (${s.points} pts)${isBusy ? ' - EN MATCH' : ''}</option>`;
+                const rank = getPlayerRank(s.name);
+                return `<option value="${s.name}" class="${isBusy ? 'busy' : ''}" ${isBusy ? 'disabled' : ''}>#${rank} ${s.name} (${s.points} pts)${isBusy ? ' - EN MATCH' : ''}</option>`;
             }).join('');
 
             select1.innerHTML = '<option value="">-- Sélectionner --</option>' + options;
@@ -1523,15 +1633,19 @@
         }
 
         async function resetTournament() {
-            if (confirm("⚠️ Réinitialiser tout le tournoi ? Tous les scores et matchs seront perdus !")) {
+            if (confirm("⚠️ Réinitialiser tout le tournoi ? Tous les scores, matchs ET compteurs de présences seront perdus !")) {
                 students.forEach(s => {
                     s.points = settings.startingPoints;
                     s.matchesPlayed = 0;
                     s.wins = 0;
                     s.losses = 0;
+                    s.sessionsPresent = 0;
+                    s.absent = false;
                 });
                 activeMatches = [];
+                currentSession = 1;
                 await saveToFirebase();
+                updateSessionInfo();
                 alert("✅ Tournoi réinitialisé !");
             }
         }
@@ -1578,6 +1692,8 @@
         window.resetTournament = resetTournament;
         window.toggleFullscreen = toggleFullscreen;
         window.exportData = exportData;
+        window.toggleAbsent = toggleAbsent;
+        window.newSession = newSession;
 
         window.onload = function() {
             loadExistingClasses();
