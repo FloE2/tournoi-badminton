@@ -135,8 +135,21 @@
         }
 
         .class-changer:hover {
-            background: rgba(102, 126, 234, 1); transform: scale(1.05);
-        }
+    background: rgba(102, 126, 234, 1); 
+    transform: scale(1.05);
+}
+
+.mode-switcher {
+    position: fixed; top: 50px; left: 10px;
+    background: rgba(0, 200, 81, 0.9); color: white;
+    padding: 8px 15px; border-radius: 20px; font-size: 0.85em;
+    cursor: pointer; z-index: 1000; transition: all 0.3s;
+    display: none;
+}
+
+.mode-switcher:hover {
+    background: rgba(0, 200, 81, 1); transform: scale(1.05);
+}
 
         header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -561,6 +574,10 @@
     <div class="class-changer" id="classChanger" onclick="changeClass()">
         📝 Changer de classe
     </div>
+    
+    <div class="mode-switcher" id="modeSwitcher" onclick="switchToDoubles()" style="display: none;">
+        🎾 Mode Double
+    </div>
 
     <div class="sync-status" id="syncStatus">
         <span id="syncIcon">🔄</span>
@@ -925,6 +942,7 @@
             document.getElementById('syncStatus').style.display = 'flex';
             document.getElementById('classNameDisplay').textContent = 'Classe ' + CLASS_NAME;
             document.getElementById('studentsTitle').textContent = 'Gestion des élèves de ' + CLASS_NAME;
+            document.getElementById('modeSwitcher').style.display = 'block';
             
             init();
         }
@@ -934,12 +952,19 @@
                 document.getElementById('mainContainer').classList.remove('visible');
                 document.getElementById('classSelectorOverlay').style.display = 'flex';
                 document.getElementById('classChanger').style.display = 'none';
+                document.getElementById('modeSwitcher').style.display = 'none';
                 document.getElementById('syncStatus').style.display = 'none';
                 document.getElementById('classNameInput').value = '';
                 document.getElementById('classNameInput').focus();
                 loadExistingClasses();
-            }
         }
+    }
+
+    window.switchToDoubles = function() {
+        if (confirm('🔄 Passer au mode Double (2 vs 2) ?\n\nOuvrir doubles.html dans un nouvel onglet ?')) {
+            window.open('doubles.html', '_blank');
+        }
+    }
 
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && document.getElementById('classSelectorOverlay').style.display !== 'none') {
