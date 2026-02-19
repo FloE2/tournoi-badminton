@@ -1121,11 +1121,43 @@
             let lossText1 = '';
             if (doublesSettings.enableDoublesNegativePoints) {
                 const losses = [];
-                if (rank1_1 <= midPoint) losses.push(`${t1p1}: -${doublesSettings.doublesNegativePointsValue} pts`);
-                if (rank1_2 <= midPoint) losses.push(`${t1p2}: -${doublesSettings.doublesNegativePointsValue} pts`);
+                const gains = [];
+                
+                if (rank1_1 <= midPoint) {
+                    const net = heteroBonus1 - doublesSettings.doublesNegativePointsValue;
+                    if (net > 0) {
+                        losses.push(`${t1p1}: +${net} pts`);
+                    } else if (net < 0) {
+                        losses.push(`${t1p1}: ${net} pts`);
+                    } else {
+                        losses.push(`${t1p1}: 0 pts`);
+                    }
+                } else {
+                    if (heteroBonus1 > 0) {
+                        losses.push(`${t1p1}: +${heteroBonus1} pts (bonus)`);
+                    }
+                }
+                
+                if (rank1_2 <= midPoint) {
+                    const net = heteroBonus1 - doublesSettings.doublesNegativePointsValue;
+                    if (net > 0) {
+                        losses.push(`${t1p2}: +${net} pts`);
+                    } else if (net < 0) {
+                        losses.push(`${t1p2}: ${net} pts`);
+                    } else {
+                        losses.push(`${t1p2}: 0 pts`);
+                    }
+                } else {
+                    if (heteroBonus1 > 0) {
+                        losses.push(`${t1p2}: +${heteroBonus1} pts (bonus)`);
+                    }
+                }
+                
                 if (losses.length > 0) {
                     lossText1 = `<div class="points-loss">Si défaite: ${losses.join(', ')}</div>`;
                 }
+            } else if (heteroBonus1 > 0) {
+                lossText1 = `<div style="font-size: 0.9em; color: #00C851; margin-top: 5px;">Si défaite: +${heteroBonus1} pts bonus chacun</div>`;
             }
             document.getElementById('scenario1Loss').innerHTML = lossText1;
             
@@ -1145,11 +1177,42 @@
             let lossText2 = '';
             if (doublesSettings.enableDoublesNegativePoints) {
                 const losses = [];
-                if (rank2_1 <= midPoint) losses.push(`${t2p1}: -${doublesSettings.doublesNegativePointsValue} pts`);
-                if (rank2_2 <= midPoint) losses.push(`${t2p2}: -${doublesSettings.doublesNegativePointsValue} pts`);
+                
+                if (rank2_1 <= midPoint) {
+                    const net = heteroBonus2 - doublesSettings.doublesNegativePointsValue;
+                    if (net > 0) {
+                        losses.push(`${t2p1}: +${net} pts`);
+                    } else if (net < 0) {
+                        losses.push(`${t2p1}: ${net} pts`);
+                    } else {
+                        losses.push(`${t2p1}: 0 pts`);
+                    }
+                } else {
+                    if (heteroBonus2 > 0) {
+                        losses.push(`${t2p1}: +${heteroBonus2} pts (bonus)`);
+                    }
+                }
+                
+                if (rank2_2 <= midPoint) {
+                    const net = heteroBonus2 - doublesSettings.doublesNegativePointsValue;
+                    if (net > 0) {
+                        losses.push(`${t2p2}: +${net} pts`);
+                    } else if (net < 0) {
+                        losses.push(`${t2p2}: ${net} pts`);
+                    } else {
+                        losses.push(`${t2p2}: 0 pts`);
+                    }
+                } else {
+                    if (heteroBonus2 > 0) {
+                        losses.push(`${t2p2}: +${heteroBonus2} pts (bonus)`);
+                    }
+                }
+                
                 if (losses.length > 0) {
                     lossText2 = `<div class="points-loss">Si défaite: ${losses.join(', ')}</div>`;
                 }
+            } else if (heteroBonus2 > 0) {
+                lossText2 = `<div style="font-size: 0.9em; color: #00C851; margin-top: 5px;">Si défaite: +${heteroBonus2} pts bonus chacun</div>`;
             }
             document.getElementById('scenario2Loss').innerHTML = lossText2;
             
