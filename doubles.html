@@ -42,13 +42,44 @@
         /* ===== FIXED BUTTONS ===== */
         .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; display: none; }
         .container.visible { display: block; }
-        .sync-status { position: fixed; top: 10px; right: 10px; background: rgba(0,200,81,0.9); color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.85em; z-index: 1000; display: none; align-items: center; gap: 8px; }
+        .sync-status { position: fixed; top: 50px; right: 10px; background: rgba(0,200,81,0.9); color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.85em; z-index: 1000; display: none; align-items: center; gap: 8px; }
         .sync-status.syncing { background: rgba(255,152,0,0.9); }
         .sync-status.error { background: rgba(244,67,54,0.9); }
         .class-changer { position: fixed; top: 10px; left: 10px; background: rgba(0,200,81,0.9); color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.85em; cursor: pointer; z-index: 1000; transition: all 0.3s; display: none; }
         .class-changer:hover { background: rgba(0,200,81,1); transform: scale(1.05); }
         .mode-switcher { position: fixed; top: 50px; left: 10px; background: rgba(102,126,234,0.9); color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.85em; cursor: pointer; z-index: 1000; transition: all 0.3s; display: none; }
         .mode-switcher:hover { background: rgba(102,126,234,1); transform: scale(1.05); }
+
+        /* ===== AUTH ===== */
+        .auth-btn {
+            position: fixed; top: 10px; right: 10px;
+            padding: 8px 15px; border-radius: 20px; font-size: 0.85em;
+            cursor: pointer; z-index: 1001; transition: all 0.3s;
+            border: none; font-weight: bold; color: white; display: none;
+        }
+        .auth-btn.logged-out { background: rgba(255, 152, 0, 0.9); }
+        .auth-btn.logged-out:hover { background: rgba(255, 152, 0, 1); transform: scale(1.05); }
+        .auth-btn.logged-in { background: rgba(0, 200, 81, 0.9); }
+        .auth-btn.logged-in:hover { background: rgba(0, 200, 81, 1); transform: scale(1.05); }
+        .auth-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: flex; justify-content: center;
+            align-items: center; z-index: 20000;
+        }
+        .auth-modal-box {
+            background: white; padding: 30px; border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            max-width: 400px; width: 90%;
+        }
+        .auth-modal-box h2 { color: #00C851; margin-bottom: 10px; text-align: center; }
+        .auth-modal-box p { color: #666; text-align: center; margin-bottom: 20px; font-size: 0.9em; }
+        .auth-modal-box input { width: 100%; padding: 12px; border: 2px solid #00C851; border-radius: 8px; margin-bottom: 12px; font-size: 1em; }
+        .auth-modal-box input:focus { outline: none; border-color: #007E33; }
+        .auth-error { color: #ff4444; font-size: 0.9em; margin-bottom: 10px; text-align: center; min-height: 20px; }
+        .auth-submit { width: 100%; padding: 12px; background: #00C851; color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; }
+        .auth-submit:hover { background: #007E33; }
+        .auth-cancel { width: 100%; padding: 10px; background: #f5f5f5; color: #666; border: none; border-radius: 8px; font-size: 0.95em; cursor: pointer; }
+        .write-disabled { opacity: 0.45; pointer-events: none !important; }
 
         /* ===== HEADER ===== */
         header { background: linear-gradient(135deg, #00C851 0%, #007E33 100%); color: white; padding: 15px; text-align: center; }
@@ -141,15 +172,9 @@
         /* ===== ACTIVE MATCHES ===== */
         .active-matches { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-top: 15px; }
         .match-card { background: linear-gradient(135deg, #00C851 0%, #007E33 100%); color: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s; }
-
-
         .match-card .teams { font-size: 1em; font-weight: bold; margin-bottom: 10px; text-align: center; }
         .match-card .team-line { margin: 5px 0; }
-        .match-card .duration-badge {
-            background: rgba(0,0,0,0.25); border-radius: 8px; padding: 6px 10px;
-            text-align: center; font-size: 1em; font-weight: bold;
-            margin-bottom: 10px; letter-spacing: 1px;
-        }
+        .match-card .duration-badge { background: rgba(0,0,0,0.25); border-radius: 8px; padding: 6px 10px; text-align: center; font-size: 1em; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px; }
         .match-card .points-info { background: rgba(255,255,255,0.2); padding: 8px; border-radius: 5px; margin-bottom: 10px; font-size: 0.85em; text-align: center; }
         .match-card .match-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .match-card button { padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: all 0.3s; font-size: 0.9em; }
@@ -157,21 +182,10 @@
         .match-card .winner-btn { background: white; color: #00C851; }
 
         /* ===== SESSION PROGRESSION ===== */
-        .progression-section {
-            background: linear-gradient(135deg, #e3f2fd, #e8f5e9);
-            border: 2px solid #2196f3; border-radius: 12px;
-            padding: 20px; margin-bottom: 25px;
-        }
+        .progression-section { background: linear-gradient(135deg, #e3f2fd, #e8f5e9); border: 2px solid #2196f3; border-radius: 12px; padding: 20px; margin-bottom: 25px; }
         .progression-section h3 { color: #1565c0; margin-bottom: 15px; font-size: 1.2em; }
-        .progression-podium {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 10px;
-        }
-        .progression-item {
-            background: white; border-radius: 10px; padding: 12px;
-            text-align: center; border: 2px solid #e0e0e0;
-            transition: all 0.3s;
-        }
+        .progression-podium { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .progression-item { background: white; border-radius: 10px; padding: 12px; text-align: center; border: 2px solid #e0e0e0; transition: all 0.3s; }
         .progression-item.rank-1 { border-color: gold; background: linear-gradient(135deg, #fff9c4, white); }
         .progression-item.rank-2 { border-color: silver; background: linear-gradient(135deg, #f5f5f5, white); }
         .progression-item.rank-3 { border-color: #cd7f32; background: linear-gradient(135deg, #fbe9e7, white); }
@@ -213,25 +227,14 @@
         }
 
         /* ===== STUDENT PRESENCE ===== */
-        .presence-card {
-            background: white; border: 2px solid #00C851; border-radius: 10px;
-            padding: 14px 16px; display: flex; align-items: center;
-            justify-content: space-between; gap: 10px;
-            transition: all 0.25s;
-        }
-        .presence-card.absent {
-            background: #ffebee; border-color: #ff4444; opacity: 0.85;
-        }
+        .presence-card { background: white; border: 2px solid #00C851; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.25s; }
+        .presence-card.absent { background: #ffebee; border-color: #ff4444; opacity: 0.85; }
         .presence-card .player-info { flex: 1; }
         .presence-card .player-rank { font-size: 0.8em; color: #999; font-weight: bold; }
         .presence-card .player-name { font-weight: bold; color: #333; font-size: 1em; }
         .presence-card .player-pts  { font-size: 0.8em; color: #00C851; }
         .presence-card.absent .player-pts { color: #ff4444; }
-        .presence-toggle {
-            border: none; border-radius: 8px; padding: 8px 12px;
-            font-size: 0.85em; font-weight: bold; cursor: pointer;
-            transition: all 0.2s; white-space: nowrap;
-        }
+        .presence-toggle { border: none; border-radius: 8px; padding: 8px 12px; font-size: 0.85em; font-weight: bold; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .presence-toggle.present { background: #ff4444; color: white; }
         .presence-toggle.present:hover { background: #cc0000; }
         .presence-toggle.absent  { background: #00C851; color: white; }
@@ -241,48 +244,36 @@
         .copyright { font-size: 0.9em; opacity: 0.9; }
 
         /* ===== MODALS ===== */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: flex; justify-content: center;
-            align-items: center; z-index: 5000;
-        }
-        .modal-box {
-            background: white; padding: 30px; border-radius: 15px;
-            max-width: 700px; width: 95%; max-height: 85vh; overflow-y: auto;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 5000; }
+        .modal-box { background: white; padding: 30px; border-radius: 15px; max-width: 700px; width: 95%; max-height: 85vh; overflow-y: auto; }
         .modal-box h2 { color: #00C851; margin-bottom: 15px; }
-        .proposed-matches-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px; margin: 20px 0;
-        }
-        .proposed-match-card {
-            background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
-            border: 2px solid #00C851; border-radius: 10px; padding: 15px;
-        }
-        .proposed-match-card .court-label {
-            background: #00C851; color: white; border-radius: 6px;
-            padding: 3px 10px; font-size: 0.85em; font-weight: bold;
-            display: inline-block; margin-bottom: 10px;
-        }
-        .proposed-match-card .team-row {
-            display: flex; align-items: center; gap: 8px;
-            padding: 6px 0; border-bottom: 1px solid #ddd;
-        }
+        .proposed-matches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin: 20px 0; }
+        .proposed-match-card { background: linear-gradient(135deg, #e8f5e9, #f1f8e9); border: 2px solid #00C851; border-radius: 10px; padding: 15px; }
+        .proposed-match-card .court-label { background: #00C851; color: white; border-radius: 6px; padding: 3px 10px; font-size: 0.85em; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        .proposed-match-card .team-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #ddd; }
         .proposed-match-card .team-row:last-child { border-bottom: none; }
-        .proposed-match-card .player-chip {
-            background: white; border: 1px solid #00C851;
-            border-radius: 5px; padding: 3px 8px; font-size: 0.85em;
-        }
-        .proposed-match-card .rank-badge {
-            background: #00C851; color: white;
-            border-radius: 4px; padding: 2px 6px;
-            font-size: 0.75em; font-weight: bold; min-width: 28px; text-align: center;
-        }
+        .proposed-match-card .player-chip { background: white; border: 1px solid #00C851; border-radius: 5px; padding: 3px 8px; font-size: 0.85em; }
+        .proposed-match-card .rank-badge { background: #00C851; color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.75em; font-weight: bold; min-width: 28px; text-align: center; }
         .vs-small { color: #00C851; font-weight: bold; margin: 6px 0; text-align: center; }
         .modal-footer { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
+
+<!-- ===== AUTH MODAL ===== -->
+<div class="auth-modal-overlay" id="authModal" style="display:none;">
+    <div class="auth-modal-box">
+        <h2>🔐 Mode Admin</h2>
+        <p>Connexion réservée à l'enseignant pour modifier les données</p>
+        <input type="email" id="authEmail" placeholder="Email" />
+        <input type="password" id="authPassword" placeholder="Mot de passe" />
+        <div class="auth-error" id="authError"></div>
+        <button class="auth-submit" onclick="doLogin()">Se connecter</button>
+        <button class="auth-cancel" onclick="closeAuthModal()">Annuler</button>
+    </div>
+</div>
+
+<button class="auth-btn logged-out" id="authBtn" onclick="toggleAuth()">🔐 Mode Admin</button>
 
 <!-- ===== CLASS SELECTOR ===== -->
 <div class="class-selector-overlay" id="classSelectorOverlay">
@@ -323,7 +314,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-orange" onclick="reshuffleTeams()">🔀 Re-mélanger</button>
-            <button class="btn btn-primary" onclick="confirmTeams()">✅ Lancer tous les matchs</button>
+            <button class="btn btn-primary write-protected" onclick="confirmTeams()">✅ Lancer tous les matchs</button>
             <button class="btn btn-danger" onclick="closeTeamsModal()">❌ Annuler</button>
         </div>
     </div>
@@ -348,10 +339,9 @@
     <div id="ranking" class="tab-content active">
 
         <div class="buttons-row">
-            <button class="btn btn-primary" onclick="startNewSession()">📅 Nouvelle séance</button>
+            <button class="btn btn-primary write-protected" onclick="startNewSession()">📅 Nouvelle séance</button>
         </div>
 
-        <!-- Progression séance -->
         <div class="progression-section" id="progressionSection" style="display:none;">
             <h3>🏅 Progression de la séance en cours (<span id="progressionSessionLabel"></span>)</h3>
             <div class="progression-podium" id="progressionPodium"></div>
@@ -381,7 +371,6 @@
     <!-- ===== MATCHES TAB ===== -->
     <div id="matches" class="tab-content">
 
-        <!-- === RANDOM TEAMS SECTION === -->
         <div class="random-teams-section">
             <h3>🎲 Génération automatique des équipes</h3>
             <p style="color:#555; margin-bottom:15px; font-size:0.95em;">
@@ -405,14 +394,13 @@
                     <div class="chip-label">Secrétariat</div>
                 </div>
             </div>
-            <button class="btn btn-purple" onclick="openGenerateTeams()" style="font-size:1.1em; padding:14px 30px;">
+            <button class="btn btn-purple write-protected" onclick="openGenerateTeams()" style="font-size:1.1em; padding:14px 30px;">
                 🎲 Générer les équipes équilibrées
             </button>
         </div>
 
         <div style="text-align:center; margin: 20px 0; color:#999; font-size:0.95em;">— ou créer un match manuellement —</div>
 
-        <!-- === MANUAL MATCH SETUP === -->
         <div class="info-box">
             <strong>🎾 Règles des Doubles :</strong>
             <ul style="margin-left:20px; margin-top:10px;">
@@ -461,7 +449,7 @@
             </div>
         </div>
 
-        <button class="btn btn-primary" onclick="startDoublesMatch()" style="display:block; margin:0 auto;">
+        <button class="btn btn-primary write-protected" onclick="startDoublesMatch()" style="display:block; margin:0 auto;">
             ▶️ Lancer le match en double
         </button>
 
@@ -473,11 +461,11 @@
     <div id="students" class="tab-content">
         <h2 style="color:#00C851; margin-bottom:8px;">👥 Présences / Absences</h2>
         <p style="color:#666; margin-bottom:20px; font-size:0.95em;">
-            Marquez les élèves absents avant de générer les équipes. Ils seront exclus automatiquement. Vous pouvez les remettre présents à tout moment.
+            Marquez les élèves absents avant de générer les équipes. Ils seront exclus automatiquement.
         </p>
 
         <div class="buttons-row">
-            <button class="btn btn-primary" onclick="markAllPresent()">✅ Tous présents</button>
+            <button class="btn btn-primary write-protected" onclick="markAllPresent()">✅ Tous présents</button>
         </div>
 
         <div style="display:flex; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
@@ -582,7 +570,7 @@
             <div class="alert"><strong>ℹ️ Règle :</strong> Seuls les joueurs de la <strong>moitié haute</strong> perdent des points en défaite.</div>
         </div>
 
-        <button class="btn btn-primary" onclick="saveDoublesSettings()" style="margin-top:20px;">💾 Sauvegarder les paramètres</button>
+        <button class="btn btn-primary write-protected" onclick="saveDoublesSettings()" style="margin-top:20px;">💾 Sauvegarder les paramètres</button>
     </div>
 
     <footer>
@@ -592,6 +580,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script>
     /* ===================================================
        FIREBASE INIT
@@ -607,18 +596,20 @@
     };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+    const auth = firebase.auth();
 
     /* ===================================================
        STATE
     =================================================== */
+    let currentUser = null;
     let CLASS_NAME = '';
     let students = [];
     let doublesMatches = [];
-    let doublesSession = 1;                 // séance doubles
-    let pendingProposedMatches = null;      // équipes générées en attente de confirmation
+    let doublesSession = 1;
+    let pendingProposedMatches = null;
 
     let doublesSettings = {
-        matchDuration: 4,      // minutes
+        matchDuration: 4,
         nbCourts: 7,
         doublesMinPoints: 5,
         doublesMaxPoints: 50,
@@ -633,6 +624,69 @@
         enableDoublesNegativePoints: false,
         doublesNegativePointsValue: 5
     };
+
+    /* ===================================================
+       AUTH SYSTEM
+    =================================================== */
+    auth.onAuthStateChanged((user) => {
+        currentUser = user;
+        const btn = document.getElementById('authBtn');
+        if (!btn) return;
+        if (user) {
+            btn.textContent = '✅ Admin (' + (user.email.split('@')[0]) + ')';
+            btn.className = 'auth-btn logged-in';
+            document.querySelectorAll('.write-protected').forEach(el => el.classList.remove('write-disabled'));
+        } else {
+            btn.textContent = '🔐 Mode Admin';
+            btn.className = 'auth-btn logged-out';
+            document.querySelectorAll('.write-protected').forEach(el => el.classList.add('write-disabled'));
+        }
+    });
+
+    function toggleAuth() {
+        if (currentUser) {
+            if (confirm('Se déconnecter du mode Admin ?')) {
+                auth.signOut();
+            }
+        } else {
+            document.getElementById('authModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('authEmail').focus(), 100);
+        }
+    }
+
+    async function doLogin() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const errorDiv = document.getElementById('authError');
+        errorDiv.textContent = '';
+        if (!email || !password) { errorDiv.textContent = 'Veuillez remplir tous les champs'; return; }
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authPassword').value = '';
+        } catch(e) {
+            errorDiv.textContent = 'Email ou mot de passe incorrect';
+        }
+    }
+
+    function closeAuthModal() {
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('authError').textContent = '';
+    }
+
+    function checkAuth(action) {
+        if (!currentUser) {
+            alert('🔐 Vous devez être connecté en mode Admin pour ' + action + '.\n\nCliquez sur le bouton "🔐 Mode Admin" en haut à droite.');
+            return false;
+        }
+        return true;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && document.getElementById('authModal').style.display === 'flex') doLogin();
+        if (e.key === 'Escape') closeAuthModal();
+    });
 
     /* ===================================================
        CLASS SELECTOR
@@ -667,7 +721,12 @@
         document.getElementById('classChanger').style.display = 'block';
         document.getElementById('modeSwitcher').style.display = 'block';
         document.getElementById('syncStatus').style.display = 'flex';
+        document.getElementById('authBtn').style.display = 'block';
         document.getElementById('classNameDisplay').textContent = 'Classe ' + CLASS_NAME;
+        // Apply write-disabled if not logged in
+        if (!currentUser) {
+            document.querySelectorAll('.write-protected').forEach(el => el.classList.add('write-disabled'));
+        }
         init();
     };
 
@@ -678,6 +737,7 @@
             document.getElementById('classChanger').style.display = 'none';
             document.getElementById('modeSwitcher').style.display = 'none';
             document.getElementById('syncStatus').style.display = 'none';
+            document.getElementById('authBtn').style.display = 'none';
             document.getElementById('classNameInput').value = '';
             loadExistingClasses();
         }
@@ -703,6 +763,10 @@
        FIREBASE SAVE / LOAD
     =================================================== */
     async function saveToFirebase() {
+        if (!currentUser) {
+            alert('🔐 Vous devez être connecté en mode Admin pour sauvegarder des données.\n\nCliquez sur le bouton "🔐 Mode Admin" en haut à droite.');
+            return;
+        }
         try {
             updateSyncStatus('syncing');
             const snap = await database.ref('tournaments/' + CLASS_NAME).once('value');
@@ -827,24 +891,16 @@
         return arr;
     }
 
-    function formatTime(seconds) {
-        if (seconds < 0) seconds = 0;
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${String(s).padStart(2, '0')}`;
-    }
-
     /* ===================================================
        NEW SESSION
     =================================================== */
     async function startNewSession() {
+        if (!checkAuth('créer une nouvelle séance')) return;
         const presentCount = students.filter(s => !s.absent).length;
         if (!confirm(`📅 Nouvelle séance de doubles ?\n\n→ Les points actuels seront enregistrés comme référence de progression.\n→ ${presentCount} élèves présents.`)) return;
         
         doublesSession++;
-        students.forEach(s => {
-            s.pointsAtSessionStart = s.points;
-        });
+        students.forEach(s => { s.pointsAtSessionStart = s.points; });
         await saveToFirebase();
         renderAll();
         alert(`✅ Séance ${doublesSession} démarrée !\nLa progression sera calculée depuis maintenant.`);
@@ -860,7 +916,6 @@
         const podium = document.getElementById('progressionPodium');
         label.textContent = `Séance ${doublesSession}`;
 
-        // Check if any student has pointsAtSessionStart
         const withProgress = students.filter(s => s.pointsAtSessionStart !== undefined);
         if (withProgress.length === 0) { section.style.display = 'none'; return; }
         section.style.display = 'block';
@@ -922,7 +977,7 @@
     }
 
     /* ===================================================
-       PLAYER SELECTS (manual)
+       PLAYER SELECTS
     =================================================== */
     function updatePlayerSelects() {
         const selects = ['team1Player1','team1Player2','team2Player1','team2Player2'].map(id => document.getElementById(id));
@@ -950,7 +1005,6 @@
         const courts = doublesSettings.nbCourts || 7;
         const maxPlaying = courts * 4;
         const playing = Math.min(present.length, maxPlaying);
-        // adjust to multiple of 4
         const playingAdj = playing - (playing % 4);
         const sec = present.length - playingAdj;
         document.getElementById('chipPresent').textContent = present.length;
@@ -960,47 +1014,35 @@
     }
 
     /* ===================================================
-       GENERATE BALANCED TEAMS (algorithm)
+       GENERATE BALANCED TEAMS
     =================================================== */
     function generateBalancedMatchups() {
         const present = students.filter(s => !s.absent);
         const courts = doublesSettings.nbCourts || 7;
         const maxPlaying = courts * 4;
 
-        // Sort by rank (best first)
         const sorted = [...present].sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
             return b.wins - a.wins;
         });
 
-        // Adjust to multiple of 4 (we need groups of 4 for doubles matches)
         let playingCount = Math.min(sorted.length, maxPlaying);
-        playingCount = playingCount - (playingCount % 4); // must be multiple of 4
+        playingCount = playingCount - (playingCount % 4);
         
         const playingPlayers = sorted.slice(0, playingCount);
         const secretariatPlayers = sorted.slice(playingCount);
 
-        // Create heterogeneous PAIRS: #1 with #last, #2 with #second-to-last, etc.
-        // This maximises heterogeneity within each pair
         const topHalf = playingPlayers.slice(0, playingCount / 2);
         const bottomHalf = playingPlayers.slice(playingCount / 2);
         
-        // Shuffle bottom half for randomness (top half pairing is fixed to guarantee balance)
         shuffleArray(bottomHalf);
-
-        // Form pairs
         const pairs = topHalf.map((p, i) => [p, bottomHalf[i]]);
-
-        // Now create matches: shuffle pairs, then pair[0] vs pair[1], pair[2] vs pair[3], etc.
         shuffleArray(pairs);
 
         const matches = [];
         for (let i = 0; i < pairs.length; i += 2) {
             if (i + 1 < pairs.length) {
-                matches.push({
-                    teamA: pairs[i],
-                    teamB: pairs[i + 1]
-                });
+                matches.push({ teamA: pairs[i], teamB: pairs[i + 1] });
             }
         }
 
@@ -1011,6 +1053,7 @@
        OPEN / RESHUFFLE / CLOSE MODAL
     =================================================== */
     window.openGenerateTeams = function() {
+        if (!checkAuth('générer les équipes')) return;
         if (students.filter(s => !s.absent).length < 4) {
             alert('❌ Il faut au moins 4 élèves présents pour générer des équipes.');
             return;
@@ -1024,7 +1067,6 @@
 
         document.getElementById('modalSessionLabel').textContent = `Séance ${doublesSession}`;
         
-        // Render proposed matches
         const grid = document.getElementById('proposedMatchesGrid');
         grid.innerHTML = result.matches.map((m, i) => {
             const avgA = ((m.teamA[0].points + m.teamA[1].points) / 2).toFixed(0);
@@ -1056,7 +1098,6 @@
                 </div>`;
         }).join('');
 
-        // Render secretariat
         const secModal = document.getElementById('secretariatModal');
         const secList = document.getElementById('secretariatModalList');
         if (result.secretariatPlayers.length > 0) {
@@ -1080,6 +1121,7 @@
     };
 
     window.confirmTeams = async function() {
+        if (!checkAuth('confirmer les équipes')) return;
         if (!pendingProposedMatches) return;
         const { matches } = pendingProposedMatches;
         
@@ -1087,7 +1129,6 @@
             const t1p1 = m.teamA[0].name, t1p2 = m.teamA[1].name;
             const t2p1 = m.teamB[0].name, t2p2 = m.teamB[1].name;
             
-            // Check not already in match
             const busy = new Set();
             doublesMatches.forEach(dm => { busy.add(dm.team1Player1); busy.add(dm.team1Player2); busy.add(dm.team2Player1); busy.add(dm.team2Player2); });
             if ([t1p1, t1p2, t2p1, t2p2].some(n => busy.has(n))) continue;
@@ -1119,7 +1160,6 @@
         document.getElementById('teamsModal').style.display = 'none';
         pendingProposedMatches = null;
         
-        // Switch to matches tab
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab')[1].classList.add('active');
@@ -1218,6 +1258,7 @@
        START MANUAL MATCH
     =================================================== */
     window.startDoublesMatch = async function() {
+        if (!checkAuth('lancer un match')) return;
         const t1p1 = document.getElementById('team1Player1').value;
         const t1p2 = document.getElementById('team1Player2').value;
         const t2p1 = document.getElementById('team2Player1').value;
@@ -1305,6 +1346,7 @@
        DECLARE WINNER
     =================================================== */
     window.declareDoublesWinner = async function(matchIndex, winningTeam) {
+        if (!checkAuth('déclarer un vainqueur')) return;
         const match = doublesMatches[matchIndex];
         const winners = winningTeam === 1 ? [match.team1Player1, match.team1Player2] : [match.team2Player1, match.team2Player2];
         const losers  = winningTeam === 1 ? [match.team2Player1, match.team2Player2] : [match.team1Player1, match.team1Player2];
@@ -1349,6 +1391,7 @@
     };
 
     window.cancelDoublesMatch = async function(matchIndex) {
+        if (!checkAuth('annuler un match')) return;
         if (confirm('Annuler ce match ?')) {
             doublesMatches.splice(matchIndex, 1);
             await saveToFirebase();
@@ -1369,7 +1412,6 @@
             return;
         }
 
-        // Sort by rank
         const sorted = [...students].sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
             return b.wins - a.wins;
@@ -1398,18 +1440,18 @@
     }
 
     window.toggleAbsent = async function(name) {
+        if (!checkAuth('modifier les présences')) return;
         const s = students.find(st => st.name === name);
         if (!s) return;
         s.absent = !s.absent;
         await saveToFirebase();
-        // renderAll will be called via the realtime listener,
-        // but also do it immediately for snappy UI
         renderStudentsPresence();
         updatePlayerSelects();
         updateRandomTeamsInfo();
     };
 
     window.markAllPresent = async function() {
+        if (!checkAuth('modifier les présences')) return;
         students.forEach(s => s.absent = false);
         await saveToFirebase();
         renderStudentsPresence();
@@ -1421,11 +1463,12 @@
        SAVE SETTINGS
     =================================================== */
     window.saveDoublesSettings = async function() {
+        if (!checkAuth('sauvegarder les paramètres')) return;
         const num = id => parseInt(document.getElementById(id).value);
         const flt = id => parseFloat(document.getElementById(id).value);
         const chk = id => document.getElementById(id).checked;
         doublesSettings = {
-            matchDuration: num('matchDuration'),   // now stored as minutes
+            matchDuration: num('matchDuration'),
             nbCourts: num('nbCourts'),
             doublesMinPoints: num('doublesMinPoints'),
             doublesMaxPoints: num('doublesMaxPoints'),
@@ -1451,6 +1494,10 @@
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && document.getElementById('classSelectorOverlay').style.display !== 'none') selectClass();
     });
+
+    window.toggleAuth = toggleAuth;
+    window.doLogin = doLogin;
+    window.closeAuthModal = closeAuthModal;
 
     window.onload = function() {
         loadExistingClasses();
