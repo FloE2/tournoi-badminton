@@ -68,19 +68,50 @@
             position: relative; display: inline-block; width: 100%;
         }
 
-        .class-delete-btn {
-            position: absolute; top: -5px; right: -5px;
-            background: #ff4444; color: white; border: none;
-            border-radius: 50%; width: 16px; height: 16px;
-            font-size: 9px; font-weight: bold; cursor: pointer;
-            display: none; align-items: center; justify-content: center;
-            z-index: 10; line-height: 1; padding: 0;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        /* ===== DELETE CLASS MODAL ===== */
+        .delete-class-btn {
+            display: none; width: 100%; margin-top: 12px;
+            padding: 10px; background: white; color: #ff4444;
+            border: 2px dashed #ff4444; border-radius: 8px;
+            cursor: pointer; font-size: 0.9em; font-weight: bold;
+            transition: all 0.2s; text-align: center;
+        }
+        .delete-class-btn:hover { background: #fff0f0; }
+        .delete-class-btn.visible { display: block; }
+
+        .delete-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75); display: flex;
+            justify-content: center; align-items: center; z-index: 30000;
+        }
+        .delete-modal-box {
+            background: white; padding: 28px; border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.4);
+            max-width: 460px; width: 90%;
+        }
+        .delete-modal-box h2 { color: #ff4444; margin-bottom: 6px; font-size: 1.3em; }
+        .delete-modal-box p { color: #666; font-size: 0.9em; margin-bottom: 18px; }
+        .delete-classes-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 10px; margin-bottom: 20px;
+        }
+        .delete-class-option {
+            padding: 14px 8px; background: #fff5f5;
+            border: 2px solid #ff4444; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s;
+            font-weight: bold; color: #ff4444;
+            text-align: center; font-size: 1em;
+        }
+        .delete-class-option:hover {
+            background: #ff4444; color: white; transform: scale(1.05);
+        }
+        .delete-modal-cancel {
+            width: 100%; padding: 12px; background: #eee;
+            color: #555; border: none; border-radius: 8px;
+            font-size: 1em; cursor: pointer; font-weight: bold;
             transition: all 0.2s;
         }
-
-        .class-delete-btn:hover { background: #cc0000; transform: scale(1.15); }
-        .class-delete-btn.visible { display: flex; }
+        .delete-modal-cancel:hover { background: #ddd; }
 
         .divider {
             display: flex; align-items: center;
@@ -645,6 +676,16 @@
         </div>
     </div>
 
+    <!-- ===== DELETE CLASS MODAL ===== -->
+    <div class="delete-modal-overlay" id="deleteModal" style="display:none;">
+        <div class="delete-modal-box">
+            <h2>🗑️ Supprimer une classe</h2>
+            <p>Cliquez sur la classe à supprimer. Toutes ses données seront définitivement perdues.</p>
+            <div class="delete-classes-grid" id="deleteClassesGrid"></div>
+            <button class="delete-modal-cancel" onclick="closeDeleteModal()">✕ Annuler</button>
+        </div>
+    </div>
+
     <div class="class-selector-overlay" id="classSelectorOverlay">
         <div class="class-selector-box">
             <h2>🏸 Tournoi de Badminton</h2>
@@ -654,6 +695,7 @@
                 <div class="existing-classes">
                     <h3><span>📚</span> Classes existantes <span style="font-size: 0.8em; color: #999;">(cliquez pour accéder)</span></h3>
                     <div class="classes-grid" id="classesGrid"></div>
+                    <button class="delete-class-btn" id="deleteClassBtn" onclick="openDeleteModal()">🗑️ Supprimer une classe</button>
                 </div>
                 <div class="divider"><span>OU CRÉER UNE NOUVELLE CLASSE</span></div>
             </div>
@@ -1026,11 +1068,15 @@
                 if (tbBtn) { tbBtn.textContent = '✅ Admin (' + shortEmail + ')'; tbBtn.className = 'tb-btn tb-btn-admin-on'; }
                 document.querySelectorAll('.write-protected').forEach(el => el.classList.remove('write-disabled'));
                 document.querySelectorAll('.class-delete-btn').forEach(el => el.classList.add('visible'));
+                const deleteBtn = document.getElementById('deleteClassBtn');
+                if (deleteBtn) deleteBtn.className = 'delete-class-btn visible';
             } else {
                 if (btn) { btn.textContent = '🔐 Mode Admin'; btn.className = 'auth-btn logged-out'; }
                 if (tbBtn) { tbBtn.textContent = '🔐 Mode Admin'; tbBtn.className = 'tb-btn tb-btn-admin-off'; }
                 document.querySelectorAll('.write-protected').forEach(el => el.classList.add('write-disabled'));
                 document.querySelectorAll('.class-delete-btn').forEach(el => el.classList.remove('visible'));
+                const deleteBtn = document.getElementById('deleteClassBtn');
+                if (deleteBtn) deleteBtn.className = 'delete-class-btn';
             }
         });
 
@@ -1099,18 +1145,31 @@
 
         function renderClassButtons(classes) {
             document.getElementById('classesGrid').innerHTML = classes.map(c => 
-                `<div class="class-button-wrapper">
-                    <div class="class-button" onclick="selectExistingClass('${c}')">${c}</div>
-                    <button class="class-delete-btn ${currentUser ? 'visible' : ''}" 
-                            onclick="deleteClass(event, '${c}')" title="Supprimer cette classe">✕</button>
-                </div>`
+                `<div class="class-button" onclick="selectExistingClass('${c}')">${c}</div>`
             ).join('');
+            // Show delete button only for admin
+            const deleteBtn = document.getElementById('deleteClassBtn');
+            if (deleteBtn) deleteBtn.className = 'delete-class-btn' + (currentUser ? ' visible' : '');
         }
 
-        async function deleteClass(e, className) {
-            e.stopPropagation();
+        function openDeleteModal() {
             if (!checkAuth('supprimer une classe')) return;
-            if (!confirm(`⚠️ Supprimer définitivement la classe "${className}" ?\n\nTous les élèves et données de cette classe seront perdus !`)) return;
+            // Populate modal with current classes
+            const classes = Array.from(document.querySelectorAll('#classesGrid .class-button'))
+                .map(el => el.textContent.trim());
+            document.getElementById('deleteClassesGrid').innerHTML = classes.map(c =>
+                `<div class="delete-class-option" onclick="confirmDeleteClass('${c}')">${c}</div>`
+            ).join('');
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        window.closeDeleteModal = function() {
+            document.getElementById('deleteModal').style.display = 'none';
+        };
+
+        window.confirmDeleteClass = async function(className) {
+            document.getElementById('deleteModal').style.display = 'none';
+            if (!confirm(`⚠️ Supprimer définitivement "${className}" ?\n\nTous les élèves et données seront perdus !`)) return;
             try {
                 await database.ref('tournaments/' + className).remove();
                 alert(`✅ Classe "${className}" supprimée.`);
@@ -1119,6 +1178,11 @@
                 alert('❌ Erreur lors de la suppression.');
                 console.error(err);
             }
+        };
+
+        async function deleteClass(e, className) {
+            // Legacy - redirect to new system
+            window.confirmDeleteClass(className);
         }
 
         window.selectClass = function() {
@@ -1997,6 +2061,7 @@
         window.doLogin = doLogin;
         window.closeAuthModal = closeAuthModal;
         window.deleteClass = deleteClass;
+        window.openDeleteModal = openDeleteModal;
 
         window.onload = function() {
             loadExistingClasses();
