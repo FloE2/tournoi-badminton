@@ -31,6 +31,24 @@
         .classes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; max-height: 180px; overflow-y: auto; padding: 5px; }
         .class-button { padding: 12px 8px; background: white; border: 2px solid #00C851; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; color: #00C851; text-align: center; font-size: 0.95em; width: 100%; }
         .class-button:hover { background: #00C851; color: white; transform: scale(1.05); }
+
+        .class-button-wrapper {
+            position: relative; display: inline-block; width: 100%;
+        }
+
+        .class-delete-btn {
+            position: absolute; top: -6px; right: -6px;
+            background: #ff4444; color: white; border: none;
+            border-radius: 50%; width: 20px; height: 20px;
+            font-size: 11px; font-weight: bold; cursor: pointer;
+            display: none; align-items: center; justify-content: center;
+            z-index: 10; line-height: 1; padding: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+
+        .class-delete-btn:hover { background: #cc0000; transform: scale(1.2); }
+        .class-delete-btn.visible { display: flex; }
         .divider { display: flex; align-items: center; text-align: center; margin: 20px 0; color: #999; }
         .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #ddd; }
         .divider span { padding: 0 15px; font-weight: bold; font-size: 0.9em; }
@@ -636,10 +654,12 @@
             btn.textContent = '✅ Admin (' + (user.email.split('@')[0]) + ')';
             btn.className = 'auth-btn logged-in';
             document.querySelectorAll('.write-protected').forEach(el => el.classList.remove('write-disabled'));
+            document.querySelectorAll('.class-delete-btn').forEach(el => el.classList.add('visible'));
         } else {
             btn.textContent = '🔐 Mode Admin';
             btn.className = 'auth-btn logged-out';
             document.querySelectorAll('.write-protected').forEach(el => el.classList.add('write-disabled'));
+            document.querySelectorAll('.class-delete-btn').forEach(el => el.classList.remove('visible'));
         }
     });
 
@@ -698,9 +718,7 @@
                 const classes = Object.keys(snap.val()).sort();
                 if (classes.length > 0) {
                     document.getElementById('existingClassesSection').style.display = 'block';
-                    document.getElementById('classesGrid').innerHTML = classes.map(c =>
-                        `<div class="class-button" onclick="selectExistingClass('${c}')">${c}</div>`
-                    ).join('');
+                    renderClassButtons(classes);
                 }
             }
         } catch(e) { console.error(e); }
@@ -710,6 +728,31 @@
         document.getElementById('classNameInput').value = cn;
         selectClass();
     };
+
+    function renderClassButtons(classes) {
+        document.getElementById('classesGrid').innerHTML = classes.map(c =>
+            `<div class="class-button-wrapper">
+                <div class="class-button" onclick="selectExistingClass('${c}')">${c}</div>
+                <button class="class-delete-btn ${currentUser ? 'visible' : ''}" 
+                        onclick="deleteClass(event, '${c}')" title="Supprimer cette classe">✕</button>
+            </div>`
+        ).join('');
+    }
+
+    async function deleteClass(e, className) {
+        e.stopPropagation();
+        if (!checkAuth('supprimer une classe')) return;
+        if (!confirm(`⚠️ Supprimer définitivement la classe "${className}" ?\n\nTous les élèves et données de cette classe seront perdus !`)) return;
+        try {
+            await database.ref('tournaments/' + className).remove();
+            alert(`✅ Classe "${className}" supprimée.`);
+            loadExistingClasses();
+        } catch(err) {
+            alert('❌ Erreur lors de la suppression.');
+            console.error(err);
+        }
+    }
+    window.deleteClass = deleteClass;
 
     window.selectClass = function() {
         const input = document.getElementById('classNameInput');
