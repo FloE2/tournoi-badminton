@@ -116,7 +116,7 @@
         .container.visible { display: block; }
 
         .sync-status {
-            position: fixed; top: 10px; right: 10px;
+            position: fixed; top: 50px; right: 10px;
             background: rgba(0, 200, 81, 0.9); color: white;
             padding: 8px 15px; border-radius: 20px;
             font-size: 0.85em; z-index: 1000;
@@ -135,21 +135,62 @@
         }
 
         .class-changer:hover {
-    background: rgba(102, 126, 234, 1); 
-    transform: scale(1.05);
-}
+            background: rgba(102, 126, 234, 1); 
+            transform: scale(1.05);
+        }
 
-.mode-switcher {
-    position: fixed; top: 50px; left: 10px;
-    background: rgba(0, 200, 81, 0.9); color: white;
-    padding: 8px 15px; border-radius: 20px; font-size: 0.85em;
-    cursor: pointer; z-index: 1000; transition: all 0.3s;
-    display: none;
-}
+        .mode-switcher {
+            position: fixed; top: 50px; left: 10px;
+            background: rgba(0, 200, 81, 0.9); color: white;
+            padding: 8px 15px; border-radius: 20px; font-size: 0.85em;
+            cursor: pointer; z-index: 1000; transition: all 0.3s;
+            display: none;
+        }
 
-.mode-switcher:hover {
-    background: rgba(0, 200, 81, 1); transform: scale(1.05);
-}
+        .mode-switcher:hover {
+            background: rgba(0, 200, 81, 1); transform: scale(1.05);
+        }
+
+        /* ===== AUTH ===== */
+        .auth-btn {
+            position: fixed; top: 10px; right: 10px;
+            padding: 8px 15px; border-radius: 20px; font-size: 0.85em;
+            cursor: pointer; z-index: 1001; transition: all 0.3s;
+            border: none; font-weight: bold; color: white; display: none;
+        }
+        .auth-btn.logged-out { background: rgba(255, 152, 0, 0.9); }
+        .auth-btn.logged-out:hover { background: rgba(255, 152, 0, 1); transform: scale(1.05); }
+        .auth-btn.logged-in { background: rgba(0, 200, 81, 0.9); }
+        .auth-btn.logged-in:hover { background: rgba(0, 200, 81, 1); transform: scale(1.05); }
+        .auth-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: flex; justify-content: center;
+            align-items: center; z-index: 20000;
+        }
+        .auth-modal-box {
+            background: white; padding: 30px; border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            max-width: 400px; width: 90%;
+        }
+        .auth-modal-box h2 { color: #667eea; margin-bottom: 10px; text-align: center; }
+        .auth-modal-box p { color: #666; text-align: center; margin-bottom: 20px; font-size: 0.9em; }
+        .auth-modal-box input {
+            width: 100%; padding: 12px; border: 2px solid #667eea;
+            border-radius: 8px; margin-bottom: 12px; font-size: 1em;
+        }
+        .auth-modal-box input:focus { outline: none; border-color: #764ba2; }
+        .auth-error { color: #ff4444; font-size: 0.9em; margin-bottom: 10px; text-align: center; min-height: 20px; }
+        .auth-submit {
+            width: 100%; padding: 12px; background: #667eea; color: white;
+            border: none; border-radius: 8px; font-size: 1em;
+            font-weight: bold; cursor: pointer; transition: all 0.3s; margin-bottom: 10px;
+        }
+        .auth-submit:hover { background: #5568d3; }
+        .auth-cancel {
+            width: 100%; padding: 10px; background: #f5f5f5; color: #666;
+            border: none; border-radius: 8px; font-size: 0.95em; cursor: pointer;
+        }
+        .write-disabled { opacity: 0.45; pointer-events: none !important; }
 
         header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -543,6 +584,22 @@
     </style>
 </head>
 <body>
+
+    <!-- ===== AUTH MODAL ===== -->
+    <div class="auth-modal-overlay" id="authModal" style="display:none;">
+        <div class="auth-modal-box">
+            <h2>🔐 Mode Admin</h2>
+            <p>Connexion réservée à l'enseignant pour modifier les données</p>
+            <input type="email" id="authEmail" placeholder="Email" />
+            <input type="password" id="authPassword" placeholder="Mot de passe" />
+            <div class="auth-error" id="authError"></div>
+            <button class="auth-submit" onclick="doLogin()">Se connecter</button>
+            <button class="auth-cancel" onclick="closeAuthModal()">Annuler</button>
+        </div>
+    </div>
+
+    <button class="auth-btn logged-out" id="authBtn" onclick="toggleAuth()">🔐 Mode Admin</button>
+
     <div class="class-selector-overlay" id="classSelectorOverlay">
         <div class="class-selector-box">
             <h2>🏸 Tournoi de Badminton</h2>
@@ -600,10 +657,10 @@
 
         <div id="ranking" class="tab-content active">
             <div class="buttons-row">
-                <button class="btn btn-primary" onclick="newSession()">📅 Nouvelle séance</button>
+                <button class="btn btn-primary write-protected" onclick="newSession()">📅 Nouvelle séance</button>
                 <button class="btn btn-primary" onclick="toggleFullscreen()">🖥️ Plein Écran</button>
                 <button class="btn btn-success" onclick="exportData()">💾 Exporter</button>
-                <button class="btn btn-danger" onclick="resetTournament()">🔄 Réinitialiser</button>
+                <button class="btn btn-danger write-protected" onclick="resetTournament()">🔄 Réinitialiser</button>
             </div>
 
             <div class="info-box" id="sessionInfo" style="display: none;">
@@ -701,7 +758,7 @@
                 </div>
             </div>
 
-            <button class="btn btn-success" onclick="startMatch()" style="display: block; margin: 0 auto;">
+            <button class="btn btn-success write-protected" onclick="startMatch()" style="display: block; margin: 0 auto;">
                 ▶️ Lancer le match
             </button>
 
@@ -714,8 +771,8 @@
             <h2 style="color: #667eea; margin-bottom: 20px;" id="studentsTitle">Gestion des élèves</h2>
             
             <div class="buttons-row">
-                <button class="btn btn-primary" onclick="addStudent()">➕ Ajouter un élève</button>
-                <button class="btn btn-danger" onclick="clearAllStudents()">🗑️ Effacer tous les élèves</button>
+                <button class="btn btn-primary write-protected" onclick="addStudent()">➕ Ajouter un élève</button>
+                <button class="btn btn-danger write-protected" onclick="clearAllStudents()">🗑️ Effacer tous les élèves</button>
             </div>
 
             <div class="students-grid" id="studentsGrid">
@@ -850,7 +907,7 @@
                 </div>
             </div>
 
-            <button class="btn btn-success" onclick="saveSettings()" style="margin-top: 20px;">💾 Sauvegarder les paramètres</button>
+            <button class="btn btn-success write-protected" onclick="saveSettings()" style="margin-top: 20px;">💾 Sauvegarder les paramètres</button>
 
             <div class="alert" style="margin-top: 30px;">
                 <strong>⚠️ Note :</strong> Les changements de paramètres n'affectent que les futurs matchs. Les points déjà attribués ne changent pas.
@@ -866,6 +923,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBb3evRvsLVbtMPMixRAMSmICXSB4Z4Y24",
@@ -879,7 +937,9 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
 
+        let currentUser = null;
         let CLASS_NAME = '';
         let students = [];
         let activeMatches = [];
@@ -903,6 +963,67 @@
             negativePointsAmplification: 0.3
         };
 
+        /* ===================================================
+           AUTH SYSTEM
+        =================================================== */
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            const btn = document.getElementById('authBtn');
+            if (!btn) return;
+            if (user) {
+                btn.textContent = '✅ Admin (' + (user.email.split('@')[0]) + ')';
+                btn.className = 'auth-btn logged-in';
+                document.querySelectorAll('.write-protected').forEach(el => el.classList.remove('write-disabled'));
+            } else {
+                btn.textContent = '🔐 Mode Admin';
+                btn.className = 'auth-btn logged-out';
+                document.querySelectorAll('.write-protected').forEach(el => el.classList.add('write-disabled'));
+            }
+        });
+
+        function toggleAuth() {
+            if (currentUser) {
+                if (confirm('Se déconnecter du mode Admin ?')) {
+                    auth.signOut();
+                }
+            } else {
+                document.getElementById('authModal').style.display = 'flex';
+                setTimeout(() => document.getElementById('authEmail').focus(), 100);
+            }
+        }
+
+        async function doLogin() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = '';
+            if (!email || !password) { errorDiv.textContent = 'Veuillez remplir tous les champs'; return; }
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                document.getElementById('authModal').style.display = 'none';
+                document.getElementById('authEmail').value = '';
+                document.getElementById('authPassword').value = '';
+            } catch(e) {
+                errorDiv.textContent = 'Email ou mot de passe incorrect';
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('authError').textContent = '';
+        }
+
+        function checkAuth(action) {
+            if (!currentUser) {
+                alert('🔐 Vous devez être connecté en mode Admin pour ' + action + '.\n\nCliquez sur le bouton "🔐 Mode Admin" en haut à droite.');
+                return false;
+            }
+            return true;
+        }
+
+        /* ===================================================
+           CLASS SELECTOR
+        =================================================== */
         async function loadExistingClasses() {
             try {
                 const snapshot = await database.ref('tournaments').once('value');
@@ -943,6 +1064,12 @@
             document.getElementById('classNameDisplay').textContent = 'Classe ' + CLASS_NAME;
             document.getElementById('studentsTitle').textContent = 'Gestion des élèves de ' + CLASS_NAME;
             document.getElementById('modeSwitcher').style.display = 'block';
+            document.getElementById('authBtn').style.display = 'block';
+            
+            // Apply write-disabled if not logged in
+            if (!currentUser) {
+                document.querySelectorAll('.write-protected').forEach(el => el.classList.add('write-disabled'));
+            }
             
             init();
         }
@@ -954,24 +1081,35 @@
                 document.getElementById('classChanger').style.display = 'none';
                 document.getElementById('modeSwitcher').style.display = 'none';
                 document.getElementById('syncStatus').style.display = 'none';
+                document.getElementById('authBtn').style.display = 'none';
                 document.getElementById('classNameInput').value = '';
                 document.getElementById('classNameInput').focus();
                 loadExistingClasses();
+            }
         }
-    }
 
-    window.switchToDoubles = function() {
-        if (confirm('🔄 Passer au mode Double (2 vs 2) ?\n\nOuvrir doubles.html dans un nouvel onglet ?')) {
-            window.open('doubles.html', '_blank');
+        window.switchToDoubles = function() {
+            if (confirm('🔄 Passer au mode Double (2 vs 2) ?\n\nOuvrir doubles.html dans un nouvel onglet ?')) {
+                window.open('doubles.html', '_blank');
+            }
         }
-    }
 
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && document.getElementById('classSelectorOverlay').style.display !== 'none') {
                 selectClass();
             }
+            if (e.key === 'Enter' && document.getElementById('authModal').style.display === 'flex') {
+                doLogin();
+            }
         });
 
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAuthModal();
+        });
+
+        /* ===================================================
+           SETTINGS
+        =================================================== */
         function toggleNegativePoints() {
             const enabled = document.getElementById('enableNegativePoints').checked;
             document.getElementById('negativePointsConfig').style.display = enabled ? 'block' : 'none';
@@ -994,6 +1132,9 @@
             }
         }
 
+        /* ===================================================
+           SYNC STATUS
+        =================================================== */
         function updateSyncStatus(status, text) {
             const syncStatus = document.getElementById('syncStatus');
             const syncIcon = document.getElementById('syncIcon');
@@ -1013,7 +1154,14 @@
             }
         }
 
+        /* ===================================================
+           FIREBASE SAVE / LOAD
+        =================================================== */
         async function saveToFirebase() {
+            if (!currentUser) {
+                alert('🔐 Vous devez être connecté en mode Admin pour sauvegarder des données.\n\nCliquez sur le bouton "🔐 Mode Admin" en haut à droite.');
+                return;
+            }
             try {
                 updateSyncStatus('syncing');
                 const data = {
@@ -1109,6 +1257,9 @@
             updateSessionInfo();
         }
 
+        /* ===================================================
+           SESSION
+        =================================================== */
         function updateSessionInfo() {
             const presentCount = students.filter(s => !s.absent).length;
             document.getElementById('currentSession').textContent = currentSession;
@@ -1121,6 +1272,7 @@
         }
 
         async function newSession() {
+            if (!checkAuth('créer une nouvelle séance')) return;
             if (students.length === 0) {
                 alert("❌ Aucun élève enregistré !");
                 return;
@@ -1146,11 +1298,15 @@
         }
 
         async function toggleAbsent(index) {
+            if (!checkAuth('modifier les présences')) return;
             students[index].absent = !students[index].absent;
             await saveToFirebase();
             updateSessionInfo();
         }
 
+        /* ===================================================
+           TABS
+        =================================================== */
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -1165,6 +1321,9 @@
             }
         }
 
+        /* ===================================================
+           AVAILABLE PLAYERS
+        =================================================== */
         function renderAvailablePlayers() {
             const section = document.getElementById('availablePlayersSection');
             const list = document.getElementById('availablePlayersList');
@@ -1181,7 +1340,6 @@
                 busyPlayers.add(match.player2);
             });
 
-            // Filtrer les présents et disponibles
             const availablePlayers = students.filter(s => !busyPlayers.has(s.name) && !s.absent);
             const sorted = [...availablePlayers].sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
@@ -1204,6 +1362,9 @@
             section.style.display = 'block';
         }
 
+        /* ===================================================
+           STUDENTS
+        =================================================== */
         function renderStudents() {
             const grid = document.getElementById('studentsGrid');
             
@@ -1225,6 +1386,7 @@
         }
 
         async function addStudent() {
+            if (!checkAuth('ajouter un élève')) return;
             const name = prompt("Prénom du nouvel élève :");
             if (name && name.trim()) {
                 students.push({
@@ -1242,6 +1404,7 @@
         }
 
         async function removeStudent(index) {
+            if (!checkAuth('supprimer un élève')) return;
             if (confirm(`Supprimer ${students[index].name} ?`)) {
                 students.splice(index, 1);
                 await saveToFirebase();
@@ -1249,17 +1412,22 @@
         }
 
         async function updateStudentName(index, newName) {
+            if (!checkAuth('modifier un élève')) return;
             students[index].name = newName;
             await saveToFirebase();
         }
 
         async function clearAllStudents() {
+            if (!checkAuth('effacer les élèves')) return;
             if (confirm("⚠️ Effacer tous les élèves ? Cette action est irréversible !")) {
                 students = [];
                 await saveToFirebase();
             }
         }
 
+        /* ===================================================
+           RANKING
+        =================================================== */
         function renderRanking() {
             const tbody = document.getElementById('rankingBody');
             
@@ -1299,6 +1467,9 @@
             }).join('');
         }
 
+        /* ===================================================
+           PLAYER SELECTS & POINTS
+        =================================================== */
         function updatePlayerSelects() {
             const select1 = document.getElementById('player1Select');
             const select2 = document.getElementById('player2Select');
@@ -1315,7 +1486,6 @@
                 busyPlayers.add(match.player2);
             });
 
-            // Filtrer les élèves présents uniquement
             const presentStudents = students.filter(s => !s.absent);
             
             const sorted = [...presentStudents].sort((a, b) => {
@@ -1351,36 +1521,19 @@
             const totalPlayers = students.length;
             const midPoint = Math.ceil(totalPlayers / 2);
             
-            // Si le perdant est dans la moitié basse, pas de points négatifs
-            if (loserRank > midPoint) {
-                return 0;
-            }
-
-            // Si les points négatifs ne sont pas activés
-            if (!settings.enableNegativePoints) {
-                return 0;
-            }
+            if (loserRank > midPoint) return 0;
+            if (!settings.enableNegativePoints) return 0;
 
             if (settings.negativePointsType === 'fixed') {
-                // Mode fixe : toujours le même nombre de points
                 return settings.negativePointsValue;
             } else {
-                // Mode proportionnel : selon l'écart de classement
                 const diff = loserPoints - winnerPoints;
-                
-                if (diff <= 0) {
-                    // Le perdant avait moins ou autant de points que le gagnant
-                    // → perte minimale
-                    return settings.negativePointsMin;
-                } else {
-                    // Le perdant avait plus de points que le gagnant
-                    // → perte proportionnelle à l'écart
-                    const normalizedDiff = diff / 100;
-                    const points = settings.negativePointsMin + 
-                        (settings.negativePointsMax - settings.negativePointsMin) * 
-                        Math.min(1, normalizedDiff * settings.negativePointsAmplification);
-                    return Math.round(points);
-                }
+                if (diff <= 0) return settings.negativePointsMin;
+                const normalizedDiff = diff / 100;
+                const points = settings.negativePointsMin + 
+                    (settings.negativePointsMax - settings.negativePointsMin) * 
+                    Math.min(1, normalizedDiff * settings.negativePointsAmplification);
+                return Math.round(points);
             }
         }
 
@@ -1468,7 +1621,11 @@
             previewDiv.style.display = 'block';
         }
 
+        /* ===================================================
+           MATCHES
+        =================================================== */
         async function startMatch() {
+            if (!checkAuth('lancer un match')) return;
             if (students.length < 2) {
                 alert("❌ Il faut au moins 2 élèves pour lancer un match !");
                 return;
@@ -1550,12 +1707,8 @@
                 let negativeText = '';
                 if (match.negativeIfP1Loses > 0 || match.negativeIfP2Loses > 0) {
                     const parts = [];
-                    if (match.negativeIfP1Loses > 0) {
-                        parts.push(`${match.player1}: -${match.negativeIfP1Loses} pts si défaite`);
-                    }
-                    if (match.negativeIfP2Loses > 0) {
-                        parts.push(`${match.player2}: -${match.negativeIfP2Loses} pts si défaite`);
-                    }
+                    if (match.negativeIfP1Loses > 0) parts.push(`${match.player1}: -${match.negativeIfP1Loses} pts si défaite`);
+                    if (match.negativeIfP2Loses > 0) parts.push(`${match.player2}: -${match.negativeIfP2Loses} pts si défaite`);
                     if (parts.length > 0) {
                         negativeText = `<div style="background: rgba(255, 68, 68, 0.2); padding: 5px; border-radius: 5px; margin-bottom: 6px; font-size: 0.75em; text-align: center; border: 1px solid rgba(255, 68, 68, 0.5);">⚠️ ${parts.join(' | ')}</div>`;
                     }
@@ -1593,6 +1746,7 @@
         }
 
         async function declareWinner(matchIndex, winnerName) {
+            if (!checkAuth('déclarer un vainqueur')) return;
             const match = activeMatches[matchIndex];
             const loserName = match.player1 === winnerName ? match.player2 : match.player1;
 
@@ -1629,6 +1783,7 @@
         }
 
         async function cancelMatch(matchIndex) {
+            if (!checkAuth('annuler un match')) return;
             if (confirm("Annuler ce match ?")) {
                 activeMatches.splice(matchIndex, 1);
                 await saveToFirebase();
@@ -1636,6 +1791,7 @@
         }
 
         async function saveSettings() {
+            if (!checkAuth('sauvegarder les paramètres')) return;
             settings.startingPoints = parseInt(document.getElementById('startingPoints').value);
             settings.minPointsWin = parseInt(document.getElementById('minPointsWin').value);
             settings.maxPointsWin = parseInt(document.getElementById('maxPointsWin').value);
@@ -1658,6 +1814,7 @@
         }
 
         async function resetTournament() {
+            if (!checkAuth('réinitialiser le tournoi')) return;
             if (confirm("⚠️ Réinitialiser tout le tournoi ? Tous les scores, matchs ET compteurs de présences seront perdus !")) {
                 students.forEach(s => {
                     s.points = settings.startingPoints;
@@ -1719,6 +1876,9 @@
         window.exportData = exportData;
         window.toggleAbsent = toggleAbsent;
         window.newSession = newSession;
+        window.toggleAuth = toggleAuth;
+        window.doLogin = doLogin;
+        window.closeAuthModal = closeAuthModal;
 
         window.onload = function() {
             loadExistingClasses();
