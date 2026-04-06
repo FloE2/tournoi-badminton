@@ -855,7 +855,7 @@
             <div class="info-box" id="sessionInfo" style="display: none;">
                 <strong>📊 Informations sur le cycle :</strong>
                 <p style="margin-top: 8px;">
-                    Séance actuelle : <strong><span id="currentSession">1</span></strong> | 
+                    Séances terminées : <strong><span id="currentSession">0</span></strong> | 
                     Total d'élèves : <strong><span id="totalStudents">0</span></strong> | 
                     Présents aujourd'hui : <strong><span id="presentToday">0</span></strong>
                 </p>
@@ -1547,15 +1547,14 @@
             const presentCount = students.filter(s => !s.absent && !s.dispense).length;
             const dispenseCount = students.filter(s => s.dispense).length;
             const absentCount = students.filter(s => s.absent).length;
-            document.getElementById('currentSession').textContent = currentSession;
+            document.getElementById('currentSession').textContent = sessions.length;
             document.getElementById('totalStudents').textContent = students.length;
             document.getElementById('presentToday').textContent = presentCount;
             const infoEl = document.getElementById('sessionInfo');
             if (students.length > 0) {
                 infoEl.style.display = 'block';
-                // Mise à jour du texte avec dispensés
                 infoEl.querySelector('p').innerHTML = `
-                    Séance actuelle : <strong>${currentSession}</strong> | 
+                    Séances terminées : <strong>${sessions.length}</strong> | 
                     Total : <strong>${students.length}</strong> | 
                     ✅ Jouent : <strong>${presentCount}</strong> | 
                     🩺 Dispensés : <strong style="color:#e65100;">${dispenseCount}</strong> | 
@@ -1845,7 +1844,7 @@
                         <td><strong>${student.name}</strong>${absentBadge}</td>
                         <td class="points">${student.points}</td>
                         <td>${student.matchesPlayed}</td>
-                        <td><strong>${sessionsPresent}/${currentSession}</strong></td>
+                        <td><strong>${sessionsPresent}/${sessions.length}</strong></td>
                         <td style="color: #667eea; font-weight: bold;">${matchesPerSession}</td>
                         <td style="color: #00C851; font-weight: bold;">${student.wins}</td>
                         <td style="color: #ff4444; font-weight: bold;">${student.losses}</td>
@@ -1862,7 +1861,7 @@
             const section = document.getElementById('progressionSection');
             const label = document.getElementById('progressionSessionLabel');
             const podium = document.getElementById('progressionPodium');
-            label.textContent = `Séance ${currentSession}`;
+            label.textContent = sessions.length > 0 ? `Séance ${sessions[sessions.length - 1].sessionNumber}` : `Séance en cours`;
 
             const withProgress = students.filter(s => s.pointsAtSessionStart !== undefined);
             if (withProgress.length === 0) { section.style.display = 'none'; return; }
