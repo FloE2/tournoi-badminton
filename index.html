@@ -645,6 +645,77 @@
         .progression-item .prog-name { font-weight: bold; color: #333; margin-bottom: 4px; }
         .progression-item .prog-delta { font-size: 1.3em; font-weight: bold; color: #667eea; }
         .progression-item .prog-delta.negative { color: #ff4444; }
+
+        /* ===== HISTORIQUE ===== */
+        .session-card {
+            background: white; border-radius: 12px; border: 2px solid #e0e0e0;
+            margin-bottom: 16px; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: box-shadow 0.2s;
+        }
+        .session-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .session-card-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; padding: 12px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .session-num { font-weight: bold; font-size: 1.1em; margin-right: 10px; }
+        .session-date-badge {
+            background: rgba(255,255,255,0.2); padding: 3px 10px;
+            border-radius: 12px; font-size: 0.9em;
+        }
+        .session-card-body { padding: 14px 16px; }
+        .absent-section { margin-bottom: 10px; }
+        .absent-chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .absent-chip {
+            background: #ffebee; color: #c62828; border: 1px solid #ffcdd2;
+            padding: 4px 10px; border-radius: 20px; font-size: 0.85em;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .chip-remove {
+            background: none; border: none; cursor: pointer;
+            color: #ff4444; font-weight: bold; padding: 0;
+            line-height: 1; font-size: 0.9em;
+        }
+        .chip-remove:hover { color: #cc0000; }
+        .compensation-badge {
+            background: #e3f2fd; border: 1px solid #90caf9;
+            color: #1565c0; padding: 7px 12px; border-radius: 8px;
+            font-size: 0.85em; margin-bottom: 10px;
+        }
+        .add-absent-row {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0;
+        }
+        .btn-add-absent {
+            background: #ff9800; color: white; border: none;
+            padding: 5px 12px; border-radius: 6px; cursor: pointer;
+            font-size: 0.85em; font-weight: bold;
+        }
+        .btn-add-absent:hover { background: #f57c00; }
+        .btn-delete-sess {
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 1em;
+        }
+        .btn-delete-sess:hover { background: rgba(255,68,68,0.5); }
+        .cycle-stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px; margin-bottom: 24px;
+        }
+        .cycle-stat {
+            background: white; border-radius: 10px; padding: 16px;
+            text-align: center; border: 2px solid #e0e0e0;
+        }
+        .cs-value { font-size: 2em; font-weight: bold; color: #667eea; }
+        .cs-label { font-size: 0.8em; color: #666; margin-top: 4px; }
+        .history-summary-table {
+            width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: 10px;
+        }
+        .history-summary-table th, .history-summary-table td {
+            padding: 7px 10px; border-bottom: 1px solid #e0e0e0; text-align: left;
+        }
+        .history-summary-table th { background: #667eea; color: white; font-weight: bold; }
+        .history-summary-table tr:hover { background: #f5f5f5; }
     </style>
 </head>
 <body>
@@ -739,6 +810,7 @@
             <button class="tab active" onclick="switchTab('ranking')">📊 Classement</button>
             <button class="tab" onclick="switchTab('matches')">⚔️ Matchs</button>
             <button class="tab" onclick="switchTab('students')">👥 Élèves</button>
+            <button class="tab" onclick="switchTab('history')">📋 Historique</button>
             <button class="tab" onclick="switchTab('settings')">⚙️ Paramètres</button>
         </div>
 
@@ -795,6 +867,23 @@
                 <tbody id="rankingBody">
                 </tbody>
             </table>
+
+            <!-- RÉSUMÉ SÉANCES dans classement -->
+            <div id="historySummarySection" style="display:none; margin-top:30px;">
+                <h3 style="color:#667eea; margin-bottom:12px;">📋 Bilan des séances du cycle</h3>
+                <table class="history-summary-table">
+                    <thead>
+                        <tr>
+                            <th>Séance</th>
+                            <th>Date</th>
+                            <th>Présents</th>
+                            <th>Absents</th>
+                            <th>Compensation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historySummaryBody"></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="matches" class="tab-content">
@@ -1006,6 +1095,22 @@
             </div>
         </div>
 
+        <!-- ===== HISTORIQUE TAB ===== -->
+        <div id="history" class="tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                <h2 style="color:#667eea;">📋 Historique du cycle</h2>
+                <button class="btn btn-primary write-protected" onclick="newSession()">📅 Nouvelle séance</button>
+            </div>
+
+            <!-- Statistiques globales du cycle -->
+            <div class="cycle-stats-grid" id="cycleStatsBox" style="display:none;"></div>
+
+            <!-- Liste des séances -->
+            <div id="historyList">
+                <p style="text-align:center; color:#999; padding:40px;">Aucune séance enregistrée. Cliquez sur "📅 Nouvelle séance" dans l'onglet Classement pour commencer.</p>
+            </div>
+        </div>
+
         <footer>
             <div class="copyright">
                 © 2025 - Application développée par <strong>EUDE Florian</strong> - Yves du Manoir
@@ -1036,6 +1141,7 @@
         let students = [];
         let activeMatches = [];
         let currentSession = 1;
+        let sessions = []; // historique des séances
         let settings = {
             startingPoints: 100,
             minPointsWin: 5,
@@ -1316,6 +1422,7 @@
                     activeMatches: activeMatches,
                     settings: settings,
                     currentSession: currentSession,
+                    sessions: sessions,
                     lastUpdate: new Date().toISOString()
                 };
                 await database.ref('tournaments/' + CLASS_NAME).set(data);
@@ -1337,6 +1444,7 @@
                     activeMatches = data.activeMatches || [];
                     settings = { ...settings, ...(data.settings || {}) };
                     currentSession = data.currentSession || 1;
+                    sessions = data.sessions || [];
                     
                     document.getElementById('startingPoints').value = settings.startingPoints;
                     document.getElementById('minPointsWin').value = settings.minPointsWin;
@@ -1383,6 +1491,7 @@
                     activeMatches = data.activeMatches || [];
                     settings = { ...settings, ...(data.settings || {}) };
                     currentSession = data.currentSession || 1;
+                    sessions = data.sessions || [];
                     
                     renderStudents();
                     renderRanking();
@@ -1390,6 +1499,7 @@
                     renderActiveMatches();
                     renderAvailablePlayers();
                     updateSessionInfo();
+                    renderHistory();
                     updateSyncStatus('synced');
                 }
             }, (error) => {
@@ -1402,6 +1512,7 @@
             await loadFromFirebase();
             setupRealtimeListener();
             updateSessionInfo();
+            renderHistory();
         }
 
         /* ===================================================
@@ -1425,14 +1536,32 @@
                 return;
             }
 
-            const presentCount = students.filter(s => !s.absent).length;
-            
-            if (!confirm(`📅 Nouvelle séance ?\n\n✅ Cela va incrémenter le compteur de présence pour les ${presentCount} élèves PRÉSENTS.\n\n⚠️ Assurez-vous d'avoir marqué les absents AVANT de cliquer sur OK.`)) {
+            const presentStudents = students.filter(s => !s.absent);
+            const absentStudents  = students.filter(s => s.absent);
+            const presentCount = presentStudents.length;
+
+            if (!confirm(`📅 Nouvelle séance ?\n\n✅ ${presentCount} présents | 🚫 ${absentStudents.length} absents\n\nLes absents recevront la moyenne des points gagnés par les présents.\n\n⚠️ Assurez-vous d'avoir marqué les absents AVANT de cliquer sur OK.`)) {
                 return;
             }
 
-            currentSession++;
-            
+            // Calcul de la compensation : moyenne des points gagnés par les présents
+            let compensationPoints = 0;
+            if (presentCount > 0 && presentStudents.some(s => s.pointsAtSessionStart !== undefined)) {
+                const gains = presentStudents
+                    .filter(s => s.pointsAtSessionStart !== undefined)
+                    .map(s => s.points - s.pointsAtSessionStart);
+                const totalGain = gains.reduce((a, b) => a + b, 0);
+                compensationPoints = Math.round(totalGain / gains.length);
+            }
+
+            // Appliquer la compensation aux absents
+            absentStudents.forEach(student => {
+                if (compensationPoints > 0) {
+                    student.points += compensationPoints;
+                }
+            });
+
+            // Incrémenter les présences
             students.forEach(student => {
                 student.pointsAtSessionStart = student.points;
                 if (!student.absent) {
@@ -1440,9 +1569,25 @@
                 }
             });
 
+            // Enregistrer la séance dans l'historique
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            sessions.push({
+                sessionNumber: currentSession,
+                date: dateStr,
+                dateISO: now.toISOString(),
+                absentStudents: absentStudents.map(s => s.name),
+                compensationPoints: compensationPoints,
+                presentCount: presentCount,
+                totalStudents: students.length
+            });
+
+            currentSession++;
+
             await saveToFirebase();
             updateSessionInfo();
-            alert(`✅ Séance ${currentSession} enregistrée !\n\n${presentCount} élèves marqués présents.`);
+            renderHistory();
+            alert(`✅ Séance ${currentSession - 1} enregistrée !\n\n✅ ${presentCount} présents\n${absentStudents.length > 0 ? `🛡️ ${absentStudents.length} absent(s) → +${compensationPoints} pts de compensation` : ''}`);
         }
 
         async function toggleAbsent(index) {
@@ -1466,6 +1611,9 @@
                 renderActiveMatches();
                 renderAvailablePlayers();
                 updatePointsPreview();
+            }
+            if (tabName === 'history') {
+                renderHistory();
             }
         }
 
@@ -2062,6 +2210,178 @@
         window.closeAuthModal = closeAuthModal;
         window.deleteClass = deleteClass;
         window.openDeleteModal = openDeleteModal;
+        window.deleteSession = deleteSession;
+        window.addAbsentToSession = addAbsentToSession;
+        window.removeAbsentFromSession = removeAbsentFromSession;
+
+        /* ===================================================
+           HISTORY
+        =================================================== */
+        function renderHistory() {
+            renderHistoryTab();
+            renderHistorySummary();
+        }
+
+        function renderHistoryTab() {
+            const container = document.getElementById('historyList');
+            if (!container) return;
+
+            if (sessions.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#999; padding:40px;">Aucune séance enregistrée. Cliquez sur "📅 Nouvelle séance" pour commencer.</p>';
+                renderCycleStats();
+                return;
+            }
+
+            container.innerHTML = [...sessions].reverse().map((sess, revIdx) => {
+                const idx = sessions.length - 1 - revIdx;
+                const absentList = (sess.absentStudents || []);
+                const absentHtml = absentList.length === 0
+                    ? '<span style="color:#00C851;">Tous présents ✅</span>'
+                    : absentList.map(name => `
+                        <span class="absent-chip">
+                            🚫 ${name}
+                            <button class="chip-remove write-protected" onclick="removeAbsentFromSession(${idx}, '${name}')" title="Retirer de la liste des absents">✕</button>
+                        </span>`).join('');
+
+                const presentStudentNames = students
+                    .filter(s => !(sess.absentStudents || []).includes(s.name))
+                    .filter(s => !absentList.includes(s.name));
+
+                const addAbsentOptions = students
+                    .filter(s => !absentList.includes(s.name))
+                    .map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+
+                return `
+                <div class="session-card">
+                    <div class="session-card-header">
+                        <div>
+                            <span class="session-num">Séance ${sess.sessionNumber}</span>
+                            <span class="session-date-badge">📅 ${sess.date}</span>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span style="font-size:0.85em; color:#667eea;">✅ ${sess.presentCount}/${sess.totalStudents}</span>
+                            <button class="btn-delete-sess write-protected" onclick="deleteSession(${idx})">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="session-card-body">
+                        <div class="absent-section">
+                            <strong style="color:#ff4444;">🚫 Absents :</strong>
+                            <div class="absent-chips-row">${absentHtml}</div>
+                        </div>
+                        ${sess.compensationPoints > 0 ? `<div class="compensation-badge">🛡️ Compensation appliquée : +${sess.compensationPoints} pts aux absents (moyenne des présents)</div>` : `<div class="compensation-badge" style="background:#e8f5e9; border-color:#00C851; color:#007E33;">✅ Aucun absent — pas de compensation</div>`}
+                        <div class="add-absent-row write-protected">
+                            <label style="font-size:0.85em; color:#666;">Ajouter un absent :</label>
+                            <select id="addAbsentSelect_${idx}" style="padding:5px 8px; border-radius:6px; border:1px solid #ddd; font-size:0.85em;">
+                                <option value="">-- Sélectionner --</option>
+                                ${addAbsentOptions}
+                            </select>
+                            <button class="btn-add-absent write-protected" onclick="addAbsentToSession(${idx})">+ Ajouter</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            renderCycleStats();
+        }
+
+        function renderCycleStats() {
+            const el = document.getElementById('cycleStatsBox');
+            if (!el) return;
+            if (sessions.length === 0) { el.style.display = 'none'; return; }
+            el.style.display = 'block';
+
+            const totalSessions = sessions.length;
+            const totalAbsences = sessions.reduce((sum, s) => sum + (s.absentStudents || []).length, 0);
+            const totalMatches = students.reduce((sum, s) => sum + (s.matchesPlayed || 0), 0);
+            const totalWins = students.reduce((sum, s) => sum + (s.wins || 0), 0);
+
+            el.innerHTML = `
+                <div class="cycle-stat"><div class="cs-value">${totalSessions}</div><div class="cs-label">Séances jouées</div></div>
+                <div class="cycle-stat"><div class="cs-value">${totalMatches}</div><div class="cs-label">Matchs au total</div></div>
+                <div class="cycle-stat"><div class="cs-value">${totalWins}</div><div class="cs-label">Victoires au total</div></div>
+                <div class="cycle-stat"><div class="cs-value">${totalAbsences}</div><div class="cs-label">Absences enregistrées</div></div>
+            `;
+        }
+
+        function renderHistorySummary() {
+            const tbody = document.getElementById('historySummaryBody');
+            if (!tbody) return;
+            const section = document.getElementById('historySummarySection');
+
+            if (sessions.length === 0) {
+                if (section) section.style.display = 'none';
+                return;
+            }
+            if (section) section.style.display = 'block';
+
+            tbody.innerHTML = sessions.map(sess => {
+                const absStr = (sess.absentStudents || []).length > 0
+                    ? (sess.absentStudents || []).join(', ')
+                    : '—';
+                return `<tr>
+                    <td><strong>Séance ${sess.sessionNumber}</strong></td>
+                    <td>${sess.date}</td>
+                    <td>${sess.presentCount}/${sess.totalStudents}</td>
+                    <td style="color:#ff4444;">${absStr}</td>
+                    <td style="color:#667eea;">${sess.compensationPoints > 0 ? '+' + sess.compensationPoints + ' pts' : '—'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function deleteSession(index) {
+            if (!checkAuth('supprimer une séance')) return;
+            const sess = sessions[index];
+            if (!confirm(`🗑️ Supprimer la Séance ${sess.sessionNumber} du ${sess.date} ?\n\n⚠️ Cette action est irréversible. Les points de compensation ne seront PAS annulés.`)) return;
+            sessions.splice(index, 1);
+            await saveToFirebase();
+            renderHistory();
+        }
+
+        async function addAbsentToSession(sessionIndex) {
+            if (!checkAuth('modifier les absents')) return;
+            const sel = document.getElementById(`addAbsentSelect_${sessionIndex}`);
+            const name = sel ? sel.value : '';
+            if (!name) return;
+            const sess = sessions[sessionIndex];
+            if (!sess.absentStudents) sess.absentStudents = [];
+            if (sess.absentStudents.includes(name)) return;
+
+            // Appliquer la compensation rétrospective : le point de compensation calculé lors de la séance
+            const student = students.find(s => s.name === name);
+            if (student && sess.compensationPoints > 0) {
+                student.points += sess.compensationPoints;
+            }
+            if (student) {
+                student.sessionsPresent = Math.max(0, (student.sessionsPresent || 0) - 1);
+            }
+
+            sess.absentStudents.push(name);
+            await saveToFirebase();
+            renderHistory();
+            renderRanking();
+        }
+
+        async function removeAbsentFromSession(sessionIndex, name) {
+            if (!checkAuth('modifier les absents')) return;
+            const sess = sessions[sessionIndex];
+            if (!sess.absentStudents) return;
+            const idx = sess.absentStudents.indexOf(name);
+            if (idx === -1) return;
+
+            // Annuler la compensation : retirer les points donnés
+            const student = students.find(s => s.name === name);
+            if (student && sess.compensationPoints > 0) {
+                student.points = Math.max(0, student.points - sess.compensationPoints);
+            }
+            if (student) {
+                student.sessionsPresent = (student.sessionsPresent || 0) + 1;
+            }
+
+            sess.absentStudents.splice(idx, 1);
+            await saveToFirebase();
+            renderHistory();
+            renderRanking();
+        }
 
         window.onload = function() {
             loadExistingClasses();
