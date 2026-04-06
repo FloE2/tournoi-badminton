@@ -1266,6 +1266,7 @@
         doublesMatches.forEach(m => { busy.add(m.team1Player1); busy.add(m.team1Player2); busy.add(m.team2Player1); busy.add(m.team2Player2); });
         const present = students.filter(s => !s.absent && !s.dispense);
         const sorted = [...present].sort((a, b) => b.points !== a.points ? b.points - a.points : b.wins - a.wins);
+        selects.forEach(sel => {
             const cur = sel.value;
             sel.innerHTML = '<option value="">-- Sélectionner --</option>' + sorted.map(s => {
                 const r = getPlayerRank(s.name);
