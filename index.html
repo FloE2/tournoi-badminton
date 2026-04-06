@@ -302,63 +302,88 @@
             color: #00C851; font-size: 0.85em;
         }
 
+        /* ===== STUDENT CARDS - nouveau design ===== */
         .students-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px; margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px; margin-bottom: 20px;
         }
 
-        .student-item {
+        .student-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e8e8e8;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            overflow: hidden;
+            transition: box-shadow 0.2s, transform 0.15s;
+            display: flex; flex-direction: column;
+        }
+        .student-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.13); transform: translateY(-1px); }
+
+        .student-card.is-absent  { border-color: #ffcdd2; background: #fff8f8; }
+        .student-card.is-dispense { border-color: #ffe0b2; background: #fffbf5; }
+
+        .sc-top {
             display: flex; align-items: center; gap: 10px;
-            padding: 10px; background: #f9f9f9;
-            border-radius: 8px; border: 2px solid #e0e0e0;
+            padding: 11px 12px 8px;
         }
-
-        .student-item.absent {
-            background: #ffebee;
-            border-color: #ff4444;
-            opacity: 0.7;
+        .sc-accent {
+            width: 5px; border-radius: 3px; align-self: stretch;
+            flex-shrink: 0; min-height: 36px;
         }
+        .is-absent  .sc-accent { background: #ef5350; }
+        .is-dispense .sc-accent { background: #fb8c00; }
+        .student-card:not(.is-absent):not(.is-dispense) .sc-accent { background: #66bb6a; }
 
-        .student-item input {
-            flex: 1; padding: 8px; border: 1px solid #ddd;
-            border-radius: 5px; font-size: 14px;
+        .sc-name-input {
+            flex: 1; border: none; outline: none;
+            font-size: 1em; font-weight: 600;
+            color: #222; background: transparent;
+            padding: 4px 0; border-bottom: 2px solid transparent;
+            transition: border-color 0.2s;
         }
+        .sc-name-input:focus { border-bottom-color: #667eea; }
 
-        .student-item button {
-            background: #ff4444; color: white; border: none;
-            padding: 8px 12px; border-radius: 5px;
-            cursor: pointer; font-weight: bold;
+        .sc-delete {
+            background: none; border: none; cursor: pointer;
+            color: #ccc; font-size: 1.1em; padding: 2px 4px;
+            border-radius: 5px; transition: color 0.2s, background 0.2s;
+            line-height: 1;
         }
+        .sc-delete:hover { color: #ff4444; background: #ffeeee; }
 
-        .student-item button:hover { background: #cc0000; }
-
-        .student-item .absent-btn {
-            background: #ff9800;
-            padding: 8px 12px;
-            font-size: 0.9em;
+        .sc-meta {
+            padding: 0 12px 6px 27px;
+            font-size: 0.78em; color: #999;
+            display: flex; gap: 10px;
         }
+        .sc-meta span { display: flex; align-items: center; gap: 3px; }
 
-        .student-item .absent-btn:hover {
-            background: #f57c00;
+        .sc-status-bar {
+            display: flex; border-top: 1px solid #f0f0f0;
         }
+        .sc-status-btn {
+            flex: 1; border: none; background: transparent;
+            padding: 8px 4px; cursor: pointer;
+            font-size: 0.8em; font-weight: 600;
+            color: #bbb; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .sc-status-btn + .sc-status-btn { border-left: 1px solid #f0f0f0; }
+        .sc-status-btn:hover { background: #f5f5f5; color: #555; }
 
-        .student-item.absent .absent-btn {
-            background: #00C851;
-        }
+        .sc-status-btn.active-present  { color: #2e7d32; background: #e8f5e9; }
+        .sc-status-btn.active-absent   { color: #c62828; background: #ffebee; }
+        .sc-status-btn.active-dispense { color: #e65100; background: #fff3e0; }
 
-        .student-item.absent .absent-btn:hover {
-            background: #007E33;
+        .sc-status-badge {
+            font-size: 0.7em; font-weight: 700; padding: 2px 7px;
+            border-radius: 10px; text-transform: uppercase; letter-spacing: 0.03em;
         }
-
-        .absent-badge {
-            background: #ff4444;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
+        .badge-absent   { background: #ffcdd2; color: #c62828; }
+        .badge-dispense { background: #ffe0b2; color: #e65100; }
+        /* legacy (kept for ranking table compat) */
+        .absent-badge { background: #ff4444; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold; }
 
         .buttons-row {
             display: flex; gap: 15px;
@@ -1519,14 +1544,25 @@
            SESSION
         =================================================== */
         function updateSessionInfo() {
-            const presentCount = students.filter(s => !s.absent).length;
+            const presentCount = students.filter(s => !s.absent && !s.dispense).length;
+            const dispenseCount = students.filter(s => s.dispense).length;
+            const absentCount = students.filter(s => s.absent).length;
             document.getElementById('currentSession').textContent = currentSession;
             document.getElementById('totalStudents').textContent = students.length;
             document.getElementById('presentToday').textContent = presentCount;
-            
+            const infoEl = document.getElementById('sessionInfo');
             if (students.length > 0) {
-                document.getElementById('sessionInfo').style.display = 'block';
+                infoEl.style.display = 'block';
+                // Mise à jour du texte avec dispensés
+                infoEl.querySelector('p').innerHTML = `
+                    Séance actuelle : <strong>${currentSession}</strong> | 
+                    Total : <strong>${students.length}</strong> | 
+                    ✅ Jouent : <strong>${presentCount}</strong> | 
+                    🩺 Dispensés : <strong style="color:#e65100;">${dispenseCount}</strong> | 
+                    🚫 Absents : <strong style="color:#c62828;">${absentCount}</strong>
+                `;
             }
+            renderStudents();
         }
 
         async function newSession() {
@@ -1536,32 +1572,31 @@
                 return;
             }
 
-            const presentStudents = students.filter(s => !s.absent);
-            const absentStudents  = students.filter(s => s.absent);
-            const presentCount = presentStudents.length;
+            // Joueurs qui jouent vraiment = présents ET non dispensés
+            const playingStudents  = students.filter(s => !s.absent && !s.dispense);
+            const absentStudents   = students.filter(s => s.absent);
+            const dispenseStudents = students.filter(s => s.dispense);
+            const cantPlayStudents = [...absentStudents, ...dispenseStudents]; // ni absents ni dispensés ne jouent
+            const presentCount = students.filter(s => !s.absent).length; // présents physiquement (y compris dispensés)
 
-            if (!confirm(`📅 Nouvelle séance ?\n\n✅ ${presentCount} présents | 🚫 ${absentStudents.length} absents\n\nLes absents recevront la moyenne des points gagnés par les présents.\n\n⚠️ Assurez-vous d'avoir marqué les absents AVANT de cliquer sur OK.`)) {
+            if (!confirm(`📅 Nouvelle séance ?\n\n✅ ${playingStudents.length} jouent | 🩺 ${dispenseStudents.length} dispensés | 🚫 ${absentStudents.length} absents\n\nLes absents ET dispensés recevront la moyenne des points gagnés par les joueurs.\n\n⚠️ Assurez-vous d'avoir marqué les statuts AVANT de cliquer sur OK.`)) {
                 return;
             }
 
-            // Calcul de la compensation : moyenne des points gagnés par les présents
+            // Compensation = moyenne des points gagnés par ceux qui ont JOUÉ
             let compensationPoints = 0;
-            if (presentCount > 0 && presentStudents.some(s => s.pointsAtSessionStart !== undefined)) {
-                const gains = presentStudents
-                    .filter(s => s.pointsAtSessionStart !== undefined)
-                    .map(s => s.points - s.pointsAtSessionStart);
-                const totalGain = gains.reduce((a, b) => a + b, 0);
-                compensationPoints = Math.round(totalGain / gains.length);
+            const playersWithRef = playingStudents.filter(s => s.pointsAtSessionStart !== undefined);
+            if (playersWithRef.length > 0) {
+                const gains = playersWithRef.map(s => s.points - s.pointsAtSessionStart);
+                compensationPoints = Math.round(gains.reduce((a, b) => a + b, 0) / gains.length);
             }
 
-            // Appliquer la compensation aux absents
-            absentStudents.forEach(student => {
-                if (compensationPoints > 0) {
-                    student.points += compensationPoints;
-                }
+            // Appliquer la compensation aux absents ET dispensés
+            cantPlayStudents.forEach(student => {
+                if (compensationPoints > 0) student.points += compensationPoints;
             });
 
-            // Incrémenter les présences
+            // Incrémenter les présences : présents physiquement (joueurs + dispensés)
             students.forEach(student => {
                 student.pointsAtSessionStart = student.points;
                 if (!student.absent) {
@@ -1577,8 +1612,9 @@
                 date: dateStr,
                 dateISO: now.toISOString(),
                 absentStudents: absentStudents.map(s => s.name),
-                compensationPoints: compensationPoints,
-                presentCount: presentCount,
+                dispenseStudents: dispenseStudents.map(s => s.name),
+                compensationPoints,
+                presentCount,
                 totalStudents: students.length
             });
 
@@ -1587,12 +1623,16 @@
             await saveToFirebase();
             updateSessionInfo();
             renderHistory();
-            alert(`✅ Séance ${currentSession - 1} enregistrée !\n\n✅ ${presentCount} présents\n${absentStudents.length > 0 ? `🛡️ ${absentStudents.length} absent(s) → +${compensationPoints} pts de compensation` : ''}`);
+            alert(`✅ Séance ${currentSession - 1} enregistrée !\n\n✅ ${playingStudents.length} ont joué | 🩺 ${dispenseStudents.length} dispensés | 🚫 ${absentStudents.length} absents\n${cantPlayStudents.length > 0 ? `🛡️ Compensation : +${compensationPoints} pts` : ''}`);
         }
 
         async function toggleAbsent(index) {
             if (!checkAuth('modifier les présences')) return;
-            students[index].absent = !students[index].absent;
+            const s = students[index];
+            // bascule absent, reset dispensé
+            const newAbsent = !s.absent;
+            s.absent  = newAbsent;
+            s.dispense = false;
             await saveToFirebase();
             updateSessionInfo();
         }
@@ -1636,7 +1676,7 @@
                 busyPlayers.add(match.player2);
             });
 
-            const availablePlayers = students.filter(s => !busyPlayers.has(s.name) && !s.absent);
+            const availablePlayers = students.filter(s => !busyPlayers.has(s.name) && !s.absent && !s.dispense);
             const sorted = [...availablePlayers].sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
                 return b.wins - a.wins;
@@ -1665,20 +1705,57 @@
             const grid = document.getElementById('studentsGrid');
             
             if (students.length === 0) {
-                grid.innerHTML = '<p style="text-align: center; color: #999; padding: 40px; grid-column: 1/-1;">Aucun élève pour le moment. Cliquez sur "➕ Ajouter un élève" pour commencer.</p>';
+                grid.innerHTML = '<p style="text-align:center;color:#999;padding:40px;grid-column:1/-1;">Aucun élève. Cliquez sur "➕ Ajouter un élève" pour commencer.</p>';
                 return;
             }
-            
-            grid.innerHTML = students.map((student, index) => `
-                <div class="student-item ${student.absent ? 'absent' : ''}">
-                    <input type="text" value="${student.name}" onchange="window.updateStudentName(${index}, this.value)">
-                    ${student.absent ? '<span class="absent-badge">ABSENT</span>' : ''}
-                    <button class="absent-btn" onclick="window.toggleAbsent(${index})" title="${student.absent ? 'Marquer présent' : 'Marquer absent'}">
-                        ${student.absent ? '✓' : '🚫'}
-                    </button>
-                    <button onclick="window.removeStudent(${index})">✖</button>
-                </div>
-            `).join('');
+
+            // Tri alphabétique pour l'affichage dans l'onglet gestion
+            const sortedWithIndex = students.map((s, i) => ({ s, i }))
+                .sort((a, b) => a.s.name.localeCompare(b.s.name, 'fr'));
+
+            grid.innerHTML = sortedWithIndex.map(({ s: student, i: index }) => {
+                const rank = getPlayerRank(student.name);
+                const statusClass = student.absent ? 'is-absent' : student.dispense ? 'is-dispense' : '';
+                const presentActive  = !student.absent && !student.dispense ? 'active-present'  : '';
+                const absentActive   = student.absent   ? 'active-absent'   : '';
+                const dispenseActive = student.dispense ? 'active-dispense' : '';
+
+                const badgeHtml = student.absent
+                    ? '<span class="sc-status-badge badge-absent">Absent</span>'
+                    : student.dispense
+                        ? '<span class="sc-status-badge badge-dispense">Dispensé</span>'
+                        : '';
+
+                return `
+                <div class="student-card ${statusClass}" id="sc-${index}">
+                    <div class="sc-top">
+                        <div class="sc-accent"></div>
+                        <input class="sc-name-input write-protected" type="text" value="${student.name}"
+                               onchange="window.updateStudentName(${index}, this.value)">
+                        ${badgeHtml}
+                        <button class="sc-delete write-protected" onclick="window.removeStudent(${index})" title="Supprimer">✕</button>
+                    </div>
+                    <div class="sc-meta">
+                        <span>🏅 #${rank}</span>
+                        <span>⭐ ${student.points} pts</span>
+                        <span>🎯 ${student.wins || 0}V / ${student.losses || 0}D</span>
+                    </div>
+                    <div class="sc-status-bar write-protected">
+                        <button class="sc-status-btn ${presentActive}"
+                                onclick="window.setStudentStatus(${index}, 'present')" title="Marquer présent">
+                            ✅ Présent
+                        </button>
+                        <button class="sc-status-btn ${absentActive}"
+                                onclick="window.setStudentStatus(${index}, 'absent')" title="Marquer absent">
+                            🚫 Absent
+                        </button>
+                        <button class="sc-status-btn ${dispenseActive}"
+                                onclick="window.setStudentStatus(${index}, 'dispense')" title="Marquer dispensé">
+                            🩺 Dispensé
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         async function addStudent() {
@@ -1692,11 +1769,20 @@
                     wins: 0,
                     losses: 0,
                     sessionsPresent: 0,
-                    absent: false
+                    absent: false,
+                    dispense: false
                 });
                 await saveToFirebase();
                 updateSessionInfo();
             }
+        }
+
+        async function setStudentStatus(index, status) {
+            if (!checkAuth('modifier le statut')) return;
+            students[index].absent  = (status === 'absent');
+            students[index].dispense = (status === 'dispense');
+            await saveToFirebase();
+            updateSessionInfo();
         }
 
         async function removeStudent(index) {
@@ -1746,10 +1832,15 @@
                 const isTopHalf = index < midPoint;
                 const sessionsPresent = student.sessionsPresent || 0;
                 const matchesPerSession = sessionsPresent > 0 ? (student.matchesPlayed / sessionsPresent).toFixed(1) : '0.0';
-                const absentBadge = student.absent ? ' <span class="absent-badge" style="font-size: 0.7em;">ABSENT</span>' : '';
+                const absentBadge = student.absent
+                    ? ' <span class="sc-status-badge badge-absent">Absent</span>'
+                    : student.dispense
+                        ? ' <span class="sc-status-badge badge-dispense">Dispensé</span>'
+                        : '';
+                const rowOpacity = (student.absent || student.dispense) ? 'opacity:0.65;' : '';
                 
                 return `
-                    <tr class="${isTopHalf ? 'top-half' : 'bottom-half'}" style="${student.absent ? 'opacity: 0.6;' : ''}">
+                    <tr class="${isTopHalf ? 'top-half' : 'bottom-half'}" style="${rowOpacity}">
                         <td class="rank">#${index + 1}</td>
                         <td><strong>${student.name}</strong>${absentBadge}</td>
                         <td class="points">${student.points}</td>
@@ -1815,14 +1906,12 @@
                 busyPlayers.add(match.player2);
             });
 
-            const presentStudents = students.filter(s => !s.absent);
+            const presentStudents = students.filter(s => !s.absent && !s.dispense);
             
             const sorted = [...presentStudents].sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
                 return b.wins - a.wins;
             });
-
-            const options = sorted.map((s, i) => {
                 const isBusy = busyPlayers.has(s.name);
                 const rank = getPlayerRank(s.name);
                 return `<option value="${s.name}" class="${isBusy ? 'busy' : ''}" ${isBusy ? 'disabled' : ''}>#${rank} ${s.name} (${s.points} pts)${isBusy ? ' - EN MATCH' : ''}</option>`;
@@ -2152,6 +2241,7 @@
                     s.losses = 0;
                     s.sessionsPresent = 0;
                     s.absent = false;
+                    s.dispense = false;
                 });
                 activeMatches = [];
                 currentSession = 1;
@@ -2205,6 +2295,7 @@
         window.exportData = exportData;
         window.toggleAbsent = toggleAbsent;
         window.newSession = newSession;
+        window.setStudentStatus = setStudentStatus;
         window.toggleAuth = toggleAuth;
         window.doLogin = doLogin;
         window.closeAuthModal = closeAuthModal;
@@ -2268,7 +2359,7 @@
                             <strong style="color:#ff4444;">🚫 Absents :</strong>
                             <div class="absent-chips-row">${absentHtml}</div>
                         </div>
-                        ${sess.compensationPoints > 0 ? `<div class="compensation-badge">🛡️ Compensation appliquée : +${sess.compensationPoints} pts aux absents (moyenne des présents)</div>` : `<div class="compensation-badge" style="background:#e8f5e9; border-color:#00C851; color:#007E33;">✅ Aucun absent — pas de compensation</div>`}
+                        ${sess.compensationPoints > 0 ? `<div class="compensation-badge">🛡️ Compensation appliquée : +${sess.compensationPoints} pts aux absents et dispensés (moyenne des joueurs)</div>` : `<div class="compensation-badge" style="background:#e8f5e9; border-color:#00C851; color:#007E33;">✅ Aucun absent/dispensé — pas de compensation</div>`}
                         <div class="add-absent-row write-protected">
                             <label style="font-size:0.85em; color:#666;">Ajouter un absent :</label>
                             <select id="addAbsentSelect_${idx}" style="padding:5px 8px; border-radius:6px; border:1px solid #ddd; font-size:0.85em;">
