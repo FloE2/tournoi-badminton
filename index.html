@@ -1911,6 +1911,8 @@
                 if (b.points !== a.points) return b.points - a.points;
                 return b.wins - a.wins;
             });
+
+            const options = sorted.map(s => {
                 const isBusy = busyPlayers.has(s.name);
                 const rank = getPlayerRank(s.name);
                 return `<option value="${s.name}" class="${isBusy ? 'busy' : ''}" ${isBusy ? 'disabled' : ''}>#${rank} ${s.name} (${s.points} pts)${isBusy ? ' - EN MATCH' : ''}</option>`;
