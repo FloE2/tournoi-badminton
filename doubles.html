@@ -332,6 +332,25 @@
         .proposed-match-card .rank-badge { background: #00C851; color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.75em; font-weight: bold; min-width: 28px; text-align: center; }
         .vs-small { color: #00C851; font-weight: bold; margin: 6px 0; text-align: center; }
         .modal-footer { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+
+        /* ===== HISTORIQUE DOUBLES ===== */
+        .d-session-card { background: white; border-radius: 12px; border: 2px solid #e0e0e0; margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .d-session-header { background: linear-gradient(135deg, #00C851, #007E33); color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .d-session-num { font-weight: bold; font-size: 1.1em; margin-right: 10px; }
+        .d-session-date { background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 12px; font-size: 0.9em; }
+        .d-session-body { padding: 14px 16px; }
+        .d-absent-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .d-absent-chip { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; padding: 4px 10px; border-radius: 20px; font-size: 0.85em; display: flex; align-items: center; gap: 6px; }
+        .d-chip-remove { background: none; border: none; cursor: pointer; color: #ff4444; font-weight: bold; padding: 0; }
+        .d-comp-badge { background: #e8f5e9; border: 1px solid #a5d6a7; color: #1b5e20; padding: 7px 12px; border-radius: 8px; font-size: 0.85em; margin: 8px 0; }
+        .d-add-absent { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
+        .d-add-btn { background: #ff9800; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: bold; }
+        .d-add-btn:hover { background: #f57c00; }
+        .d-delete-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 1em; }
+        .d-delete-btn:hover { background: rgba(255,68,68,0.5); }
+        .d-cycle-stat { background: white; border-radius: 10px; padding: 16px; text-align: center; border: 2px solid #e0e0e0; }
+        .d-cs-value { font-size: 2em; font-weight: bold; color: #00C851; }
+        .d-cs-label { font-size: 0.8em; color: #666; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -431,6 +450,7 @@
         <button class="tab active" onclick="switchTab('ranking', event)">📊 Classement</button>
         <button class="tab" onclick="switchTab('matches', event)">🎾 Matchs Doubles</button>
         <button class="tab" onclick="switchTab('students', event)">👥 Élèves</button>
+        <button class="tab" onclick="switchTab('history', event)">📋 Historique</button>
         <button class="tab" onclick="switchTab('settings', event)">⚙️ Paramètres</button>
     </div>
 
@@ -446,18 +466,18 @@
             <div class="progression-podium" id="progressionPodium"></div>
         </div>
 
-        <div class="alert">
-            <strong>ℹ️ Classement partagé :</strong> Ce classement est le même que celui du mode Simple. Les points gagnés ou perdus en Double impactent le classement général.
+        <div class="alert" style="background:#e8f5e9; border-color:#00C851;">
+            <strong>🎾 Classement Doubles indépendant :</strong> Ce classement est basé uniquement sur les points gagnés en doubles. Le classement Simple (colonne "Rg S") sert <em>uniquement de référence</em> pour former les équipes équilibrées — les victoires en doubles n'impactent PAS le classement simple.
         </div>
 
         <table class="ranking-table">
             <thead>
                 <tr>
-                    <th>Rang</th>
+                    <th>Rang D</th>
                     <th>Prénom</th>
-                    <th>Points</th>
-                    <th>Progression séance</th>
-                    <th>Matchs S</th>
+                    <th>Pts Doubles</th>
+                    <th>Progression</th>
+                    <th>Rg S</th>
                     <th>Matchs D</th>
                     <th>V</th>
                     <th>D</th>
@@ -465,6 +485,23 @@
             </thead>
             <tbody id="rankingBody"></tbody>
         </table>
+
+        <!-- RÉSUMÉ SÉANCES dans classement doubles -->
+        <div id="doublesSummarySection" style="display:none; margin-top:30px;">
+            <h3 style="color:#00C851; margin-bottom:12px;">📋 Bilan des séances doubles</h3>
+            <table class="history-summary-table" style="width:100%; border-collapse:collapse; font-size:0.9em;">
+                <thead>
+                    <tr style="background:#00C851; color:white;">
+                        <th style="padding:7px 10px; text-align:left;">Séance</th>
+                        <th style="padding:7px 10px; text-align:left;">Date</th>
+                        <th style="padding:7px 10px; text-align:left;">Présents</th>
+                        <th style="padding:7px 10px; text-align:left;">Absents</th>
+                        <th style="padding:7px 10px; text-align:left;">Compensation</th>
+                    </tr>
+                </thead>
+                <tbody id="doublesSummaryBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- ===== MATCHES TAB ===== -->
@@ -672,6 +709,22 @@
         <button class="btn btn-primary write-protected" onclick="saveDoublesSettings()" style="margin-top:20px;">💾 Sauvegarder les paramètres</button>
     </div>
 
+    <!-- ===== HISTORIQUE DOUBLES TAB ===== -->
+    <div id="history" class="tab-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+            <h2 style="color:#00C851;">📋 Historique Doubles</h2>
+            <button class="btn btn-primary write-protected" onclick="startNewSession()">📅 Nouvelle séance</button>
+        </div>
+
+        <!-- Stats globales -->
+        <div id="doublesCycleStatsBox" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; margin-bottom:24px;"></div>
+
+        <!-- Liste des séances -->
+        <div id="doublesHistoryList">
+            <p style="text-align:center; color:#999; padding:40px;">Aucune séance enregistrée.</p>
+        </div>
+    </div>
+
     <footer>
         <div class="copyright">© 2025 - Application développée par <strong>EUDE Florian</strong> - Yves du Manoir</div>
     </footer>
@@ -705,6 +758,7 @@
     let students = [];
     let doublesMatches = [];
     let doublesSession = 1;
+    let doublesSessions = []; // historique des séances doubles
     let pendingProposedMatches = null;
 
     let doublesSettings = {
@@ -927,6 +981,7 @@
                 doublesMatches,
                 doublesSettings,
                 doublesSession,
+                doublesSessions,
                 lastUpdate: new Date().toISOString()
             });
             updateSyncStatus('synced');
@@ -943,9 +998,17 @@
             if (snap.exists()) {
                 const data = snap.val();
                 students = data.students || [];
+                // Initialiser les champs doubles si absents (rétrocompatibilité)
+                students.forEach(s => {
+                    if (s.doublesPoints === undefined) s.doublesPoints = 100;
+                    if (s.doublesWins === undefined) s.doublesWins = 0;
+                    if (s.doublesLosses === undefined) s.doublesLosses = 0;
+                    if (s.doublesMatchesPlayed === undefined) s.doublesMatchesPlayed = 0;
+                });
                 doublesMatches = data.doublesMatches || [];
                 doublesSettings = { ...doublesSettings, ...(data.doublesSettings || {}) };
                 doublesSession = data.doublesSession || 1;
+                doublesSessions = data.doublesSessions || [];
                 syncSettingsToUI();
                 updateSyncStatus('synced');
             } else {
@@ -964,9 +1027,16 @@
             if (snap.exists()) {
                 const data = snap.val();
                 students = data.students || [];
+                students.forEach(s => {
+                    if (s.doublesPoints === undefined) s.doublesPoints = 100;
+                    if (s.doublesWins === undefined) s.doublesWins = 0;
+                    if (s.doublesLosses === undefined) s.doublesLosses = 0;
+                    if (s.doublesMatchesPlayed === undefined) s.doublesMatchesPlayed = 0;
+                });
                 doublesMatches = data.doublesMatches || [];
                 doublesSettings = { ...doublesSettings, ...(data.doublesSettings || {}) };
                 doublesSession = data.doublesSession || 1;
+                doublesSessions = data.doublesSessions || [];
                 renderAll();
                 updateSyncStatus('synced');
             }
@@ -1010,6 +1080,7 @@
         updateRandomTeamsInfo();
         renderProgressionSection();
         renderStudentsPresence();
+        renderDoublesHistory();
     }
 
     /* ===================================================
@@ -1022,6 +1093,7 @@
         document.getElementById(tabName).classList.add('active');
         if (tabName === 'matches') { updatePlayerSelects(); renderActiveMatches(); updateRandomTeamsInfo(); }
         if (tabName === 'students') { renderStudentsPresence(); }
+        if (tabName === 'history') { renderDoublesHistory(); }
     }
     window.switchTab = switchTab;
 
@@ -1046,14 +1118,48 @@
     =================================================== */
     async function startNewSession() {
         if (!checkAuth('créer une nouvelle séance')) return;
-        const presentCount = students.filter(s => !s.absent).length;
-        if (!confirm(`📅 Nouvelle séance de doubles ?\n\n→ Les points actuels seront enregistrés comme référence de progression.\n→ ${presentCount} élèves présents.`)) return;
-        
+        const presentStudents = students.filter(s => !s.absent);
+        const absentStudents  = students.filter(s => s.absent);
+        const presentCount = presentStudents.length;
+
+        if (!confirm(`📅 Nouvelle séance de doubles ?\n\n✅ ${presentCount} présents | 🚫 ${absentStudents.length} absents\n\nLes absents recevront la moyenne des points doubles gagnés par les présents.`)) return;
+
+        // Compensation : moyenne des doublesPoints gagnés par les présents
+        let compensationPoints = 0;
+        const withRef = presentStudents.filter(s => s.doublesPointsAtSessionStart !== undefined);
+        if (withRef.length > 0) {
+            const gains = withRef.map(s => (s.doublesPoints || 100) - s.doublesPointsAtSessionStart);
+            const total = gains.reduce((a, b) => a + b, 0);
+            compensationPoints = Math.round(total / gains.length);
+        }
+
+        // Appliquer compensation aux absents (doublesPoints uniquement)
+        absentStudents.forEach(s => {
+            if (compensationPoints > 0) s.doublesPoints = (s.doublesPoints || 100) + compensationPoints;
+        });
+
+        // Reset référence de session pour tous
+        students.forEach(s => {
+            s.doublesPointsAtSessionStart = s.doublesPoints || 100;
+        });
+
+        // Enregistrer la séance
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        doublesSessions.push({
+            sessionNumber: doublesSession,
+            date: dateStr,
+            dateISO: now.toISOString(),
+            absentStudents: absentStudents.map(s => s.name),
+            compensationPoints,
+            presentCount,
+            totalStudents: students.length
+        });
+
         doublesSession++;
-        students.forEach(s => { s.pointsAtSessionStart = s.points; });
         await saveToFirebase();
         renderAll();
-        alert(`✅ Séance ${doublesSession} démarrée !\nLa progression sera calculée depuis maintenant.`);
+        alert(`✅ Séance doubles ${doublesSession - 1} enregistrée !\n\n✅ ${presentCount} présents\n${absentStudents.length > 0 ? `🛡️ ${absentStudents.length} absent(s) → +${compensationPoints} pts doubles de compensation` : ''}`);
     }
     window.startNewSession = startNewSession;
 
@@ -1064,15 +1170,15 @@
         const section = document.getElementById('progressionSection');
         const label = document.getElementById('progressionSessionLabel');
         const podium = document.getElementById('progressionPodium');
-        label.textContent = `Séance ${doublesSession}`;
+        label.textContent = `Séance Doubles ${doublesSession}`;
 
-        const withProgress = students.filter(s => s.pointsAtSessionStart !== undefined);
+        const withProgress = students.filter(s => s.doublesPointsAtSessionStart !== undefined);
         if (withProgress.length === 0) { section.style.display = 'none'; return; }
         section.style.display = 'block';
 
         const progressions = students.map(s => ({
             name: s.name,
-            delta: s.points - (s.pointsAtSessionStart || s.points)
+            delta: (s.doublesPoints || 100) - (s.doublesPointsAtSessionStart || s.doublesPoints || 100)
         })).sort((a, b) => b.delta - a.delta);
 
         const medals = ['🥇', '🥈', '🥉'];
@@ -1084,7 +1190,7 @@
                 <div class="progression-item ${cls}">
                     <div class="prog-rank">${medals[i] || (i+1)}</div>
                     <div class="prog-name">${p.name}</div>
-                    <div class="prog-delta ${deltaClass}">${deltaStr} pts</div>
+                    <div class="prog-delta ${deltaClass}">${deltaStr} pts D</div>
                 </div>`;
         }).join('');
     }
@@ -1095,33 +1201,48 @@
     function renderRanking() {
         const tbody = document.getElementById('rankingBody');
         if (students.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#999;">Aucun élève — créez-les depuis le mode Simple (index.html)</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">Aucun élève — créez-les depuis le mode Simple (index.html)</td></tr>';
             return;
         }
-        const sorted = [...students].sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            if (b.wins !== a.wins) return b.wins - a.wins;
-            return a.losses - b.losses;
-        });
-        const mid = Math.ceil(sorted.length / 2);
 
-        tbody.innerHTML = sorted.map((s, i) => {
-            const delta = s.pointsAtSessionStart !== undefined ? s.points - s.pointsAtSessionStart : null;
+        // Classement DOUBLES : trié par doublesPoints
+        const sortedDoubles = [...students].sort((a, b) => {
+            const da = a.doublesPoints || 100, db = b.doublesPoints || 100;
+            if (db !== da) return db - da;
+            return (b.doublesWins || 0) - (a.doublesWins || 0);
+        });
+
+        // Classement SIMPLE : trié par points simples (pour référence)
+        const sortedSimple = [...students].sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            return (b.wins || 0) - (a.wins || 0);
+        });
+        function getSimpleRank(name) {
+            return sortedSimple.findIndex(s => s.name === name) + 1;
+        }
+
+        const mid = Math.ceil(sortedDoubles.length / 2);
+
+        tbody.innerHTML = sortedDoubles.map((s, i) => {
+            const delta = s.doublesPointsAtSessionStart !== undefined
+                ? (s.doublesPoints || 100) - s.doublesPointsAtSessionStart : null;
             let deltaHtml = '<span class="prog-cell-neu">—</span>';
             if (delta !== null) {
                 const cls = delta > 0 ? 'prog-cell-pos' : delta < 0 ? 'prog-cell-neg' : 'prog-cell-neu';
                 deltaHtml = `<span class="${cls}">${delta >= 0 ? '+' : ''}${delta}</span>`;
             }
+            const simpleRank = getSimpleRank(s.name);
+            const absentBadge = s.absent ? ' <span style="background:#ff4444;color:white;padding:2px 6px;border-radius:4px;font-size:0.7em;">ABSENT</span>' : '';
             return `
-                <tr class="${i < mid ? 'top-half' : 'bottom-half'}">
+                <tr class="${i < mid ? 'top-half' : 'bottom-half'}" style="${s.absent ? 'opacity:0.6;' : ''}">
                     <td class="rank">#${i+1}</td>
-                    <td><strong>${s.name}</strong></td>
-                    <td class="points">${s.points}</td>
+                    <td><strong>${s.name}</strong>${absentBadge}</td>
+                    <td class="points">${s.doublesPoints || 100}</td>
                     <td>${deltaHtml}</td>
-                    <td>${s.matchesPlayed || 0}</td>
-                    <td><strong style="color:#00C851;">${s.matchesDoubles || 0}</strong></td>
-                    <td style="color:#00C851;font-weight:bold;">${s.wins || 0}</td>
-                    <td style="color:#ff4444;font-weight:bold;">${s.losses || 0}</td>
+                    <td style="color:#667eea;font-size:0.85em;">#${simpleRank}</td>
+                    <td>${s.doublesMatchesPlayed || 0}</td>
+                    <td style="color:#00C851;font-weight:bold;">${s.doublesWins || 0}</td>
+                    <td style="color:#ff4444;font-weight:bold;">${s.doublesLosses || 0}</td>
                 </tr>`;
         }).join('');
     }
@@ -1504,33 +1625,43 @@
         const winnerBonus      = winningTeam === 1 ? match.heteroBonus1 : match.heteroBonus2;
         const loserBonus       = winningTeam === 1 ? match.heteroBonus2 : match.heteroBonus1;
         const totalWinner = winnerBasePoints + winnerBonus;
-        const mid = Math.ceil(students.length / 2);
 
+        // Classement doubles pour déterminer la moitié haute (basé sur doublesPoints)
+        const sortedByDoubles = [...students].sort((a, b) => (b.doublesPoints || 100) - (a.doublesPoints || 100));
+        const mid = Math.ceil(students.length / 2);
+        function getDoublesRank(name) {
+            return sortedByDoubles.findIndex(s => s.name === name) + 1;
+        }
+
+        // Gagnants : mise à jour des points DOUBLES uniquement
         winners.forEach(name => {
             const p = students.find(s => s.name === name);
-            p.points += totalWinner;
-            p.wins = (p.wins || 0) + 1;
-            p.matchesDoubles = (p.matchesDoubles || 0) + 1;
-            p.matchesPlayed = (p.matchesPlayed || 0) + 1;
+            if (!p) return;
+            p.doublesPoints = (p.doublesPoints || 100) + totalWinner;
+            p.doublesWins = (p.doublesWins || 0) + 1;
+            p.doublesMatchesPlayed = (p.doublesMatchesPlayed || 0) + 1;
         });
 
+        // Perdants : bonus hétérogénéité et éventuels points négatifs — en doublesPoints
         const lossDetails = [];
         losers.forEach(name => {
             const p = students.find(s => s.name === name);
-            const rank = getPlayerRank(name);
+            if (!p) return;
+            const dRank = getDoublesRank(name);
             let net = loserBonus;
-            if (doublesSettings.enableDoublesNegativePoints && rank <= mid) net -= doublesSettings.doublesNegativePointsValue;
-            p.points += net;
-            p.losses = (p.losses || 0) + 1;
-            p.matchesDoubles = (p.matchesDoubles || 0) + 1;
-            p.matchesPlayed = (p.matchesPlayed || 0) + 1;
+            if (doublesSettings.enableDoublesNegativePoints && dRank <= mid) {
+                net -= doublesSettings.doublesNegativePointsValue;
+            }
+            p.doublesPoints = (p.doublesPoints || 100) + net;
+            p.doublesLosses = (p.doublesLosses || 0) + 1;
+            p.doublesMatchesPlayed = (p.doublesMatchesPlayed || 0) + 1;
             lossDetails.push(`${name}: ${net >= 0 ? '+' : ''}${net} pts`);
         });
 
         doublesMatches.splice(matchIndex, 1);
         await saveToFirebase();
 
-        let msg = `🏆 Équipe ${winners[0]}/${winners[1]} remporte le match !\n\nGagnants: +${totalWinner} pts chacun`;
+        let msg = `🏆 Équipe ${winners[0]}/${winners[1]} remporte le match !\n\nGagnants: +${totalWinner} pts doubles chacun`;
         if (winnerBonus > 0) msg += `\n  (dont +${winnerBonus} pts bonus hétérogénéité)`;
         msg += `\n\nPerdants:\n${lossDetails.join('\n')}`;
         if (match.advantage > 0) {
@@ -1562,9 +1693,10 @@
             return;
         }
 
+        // Trier par classement SIMPLE (référence pour les équipes)
         const sorted = [...students].sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
-            return b.wins - a.wins;
+            return (b.wins || 0) - (a.wins || 0);
         });
 
         const presentN = students.filter(s => !s.absent).length;
@@ -1579,7 +1711,7 @@
                     <div class="player-info">
                         <div class="player-rank">#${i + 1}</div>
                         <div class="player-name">${s.name}</div>
-                        <div class="player-pts">${s.points} pts</div>
+                        <div class="player-pts">${s.points} pts S | ${s.doublesPoints || 100} pts D</div>
                     </div>
                     <button class="presence-toggle ${isAbsent ? 'absent' : 'present'}"
                             onclick="toggleAbsent('${s.name}')">
@@ -1641,6 +1773,162 @@
     /* ===================================================
        INIT ON LOAD
     =================================================== */
+    /* ===================================================
+       DOUBLES HISTORY
+    =================================================== */
+    function renderDoublesHistory() {
+        renderDoublesHistoryTab();
+        renderDoublesSummary();
+    }
+
+    function renderDoublesHistoryTab() {
+        const container = document.getElementById('doublesHistoryList');
+        if (!container) return;
+
+        if (doublesSessions.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#999; padding:40px;">Aucune séance enregistrée. Cliquez sur "📅 Nouvelle séance" pour commencer.</p>';
+            renderDoublesCycleStats();
+            return;
+        }
+
+        container.innerHTML = [...doublesSessions].reverse().map((sess, revIdx) => {
+            const idx = doublesSessions.length - 1 - revIdx;
+            const absentList = sess.absentStudents || [];
+            const absentHtml = absentList.length === 0
+                ? '<span style="color:#00C851;">Tous présents ✅</span>'
+                : absentList.map(name => `
+                    <span class="d-absent-chip">
+                        🚫 ${name}
+                        <button class="d-chip-remove write-protected" onclick="removeAbsentFromDoublesSession(${idx}, '${name}')" title="Retirer des absents">✕</button>
+                    </span>`).join('');
+
+            const addOptions = students
+                .filter(s => !absentList.includes(s.name))
+                .map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+
+            return `
+            <div class="d-session-card">
+                <div class="d-session-header">
+                    <div>
+                        <span class="d-session-num">Séance Doubles ${sess.sessionNumber}</span>
+                        <span class="d-session-date">📅 ${sess.date}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span style="font-size:0.85em;">✅ ${sess.presentCount}/${sess.totalStudents}</span>
+                        <button class="d-delete-btn write-protected" onclick="deleteDoublesSession(${idx})">🗑️</button>
+                    </div>
+                </div>
+                <div class="d-session-body">
+                    <div>
+                        <strong style="color:#ff4444;">🚫 Absents :</strong>
+                        <div class="d-absent-chips">${absentHtml}</div>
+                    </div>
+                    <div class="d-comp-badge">
+                        ${sess.compensationPoints > 0
+                            ? `🛡️ Compensation doubles : +${sess.compensationPoints} pts aux absents (moyenne des présents)`
+                            : '✅ Aucun absent — pas de compensation'}
+                    </div>
+                    <div class="d-add-absent write-protected">
+                        <label style="font-size:0.85em; color:#666;">Ajouter un absent :</label>
+                        <select id="dAddAbsentSelect_${idx}" style="padding:5px 8px; border-radius:6px; border:1px solid #ddd; font-size:0.85em;">
+                            <option value="">-- Sélectionner --</option>
+                            ${addOptions}
+                        </select>
+                        <button class="d-add-btn write-protected" onclick="addAbsentToDoublesSession(${idx})">+ Ajouter</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+        renderDoublesCycleStats();
+    }
+
+    function renderDoublesCycleStats() {
+        const el = document.getElementById('doublesCycleStatsBox');
+        if (!el) return;
+        if (doublesSessions.length === 0) { el.innerHTML = ''; return; }
+
+        const totalSessions = doublesSessions.length;
+        const totalAbsences = doublesSessions.reduce((s, sess) => s + (sess.absentStudents || []).length, 0);
+        const totalMatchesD = students.reduce((s, st) => s + (st.doublesMatchesPlayed || 0), 0);
+        const totalWinsD    = students.reduce((s, st) => s + (st.doublesWins || 0), 0);
+
+        el.innerHTML = `
+            <div class="d-cycle-stat"><div class="d-cs-value">${totalSessions}</div><div class="d-cs-label">Séances doubles</div></div>
+            <div class="d-cycle-stat"><div class="d-cs-value">${totalMatchesD}</div><div class="d-cs-label">Matchs doubles</div></div>
+            <div class="d-cycle-stat"><div class="d-cs-value">${totalWinsD}</div><div class="d-cs-label">Victoires doubles</div></div>
+            <div class="d-cycle-stat"><div class="d-cs-value">${totalAbsences}</div><div class="d-cs-label">Absences doubles</div></div>
+        `;
+    }
+
+    function renderDoublesSummary() {
+        const tbody = document.getElementById('doublesSummaryBody');
+        const section = document.getElementById('doublesSummarySection');
+        if (!tbody) return;
+        if (doublesSessions.length === 0) { if (section) section.style.display = 'none'; return; }
+        if (section) section.style.display = 'block';
+
+        tbody.innerHTML = doublesSessions.map(sess => {
+            const absStr = (sess.absentStudents || []).length > 0
+                ? (sess.absentStudents || []).join(', ')
+                : '—';
+            return `<tr style="border-bottom:1px solid #e0e0e0;">
+                <td style="padding:7px 10px;"><strong>Séance ${sess.sessionNumber}</strong></td>
+                <td style="padding:7px 10px;">${sess.date}</td>
+                <td style="padding:7px 10px;">${sess.presentCount}/${sess.totalStudents}</td>
+                <td style="padding:7px 10px; color:#ff4444;">${absStr}</td>
+                <td style="padding:7px 10px; color:#00C851;">${sess.compensationPoints > 0 ? '+' + sess.compensationPoints + ' pts D' : '—'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    window.deleteDoublesSession = async function(index) {
+        if (!checkAuth('supprimer une séance')) return;
+        const sess = doublesSessions[index];
+        if (!confirm(`🗑️ Supprimer la Séance Doubles ${sess.sessionNumber} du ${sess.date} ?\n\n⚠️ Les points de compensation ne seront PAS annulés.`)) return;
+        doublesSessions.splice(index, 1);
+        await saveToFirebase();
+        renderDoublesHistory();
+    };
+
+    window.addAbsentToDoublesSession = async function(sessionIndex) {
+        if (!checkAuth('modifier les absents')) return;
+        const sel = document.getElementById(`dAddAbsentSelect_${sessionIndex}`);
+        const name = sel ? sel.value : '';
+        if (!name) return;
+        const sess = doublesSessions[sessionIndex];
+        if (!sess.absentStudents) sess.absentStudents = [];
+        if (sess.absentStudents.includes(name)) return;
+
+        const student = students.find(s => s.name === name);
+        if (student && sess.compensationPoints > 0) {
+            student.doublesPoints = (student.doublesPoints || 100) + sess.compensationPoints;
+        }
+
+        sess.absentStudents.push(name);
+        await saveToFirebase();
+        renderDoublesHistory();
+        renderRanking();
+    };
+
+    window.removeAbsentFromDoublesSession = async function(sessionIndex, name) {
+        if (!checkAuth('modifier les absents')) return;
+        const sess = doublesSessions[sessionIndex];
+        if (!sess.absentStudents) return;
+        const idx = sess.absentStudents.indexOf(name);
+        if (idx === -1) return;
+
+        const student = students.find(s => s.name === name);
+        if (student && sess.compensationPoints > 0) {
+            student.doublesPoints = Math.max(0, (student.doublesPoints || 100) - sess.compensationPoints);
+        }
+
+        sess.absentStudents.splice(idx, 1);
+        await saveToFirebase();
+        renderDoublesHistory();
+        renderRanking();
+    };
+
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && document.getElementById('classSelectorOverlay').style.display !== 'none') selectClass();
     });
