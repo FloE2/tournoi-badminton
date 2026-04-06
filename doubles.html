@@ -1118,13 +1118,16 @@
     =================================================== */
     async function startNewSession() {
         if (!checkAuth('créer une nouvelle séance')) return;
-        const presentStudents = students.filter(s => !s.absent);
+        const presentStudents = students.filter(s => !s.absent && !s.dispense);
         const absentStudents  = students.filter(s => s.absent);
-        const presentCount = presentStudents.length;
+        const dispenseStudents = students.filter(s => s.dispense);
+        const cantPlayStudents = [...absentStudents, ...dispenseStudents];
+        const presentCount = students.filter(s => !s.absent).length;
+        const nextSessionNum = doublesSessions.length + 1;
 
-        if (!confirm(`📅 Nouvelle séance de doubles ?\n\n✅ ${presentCount} présents | 🚫 ${absentStudents.length} absents\n\nLes absents recevront la moyenne des points doubles gagnés par les présents.`)) return;
+        if (!confirm(`📅 Nouvelle séance Doubles n°${nextSessionNum} ?\n\n✅ ${presentStudents.length} jouent | 🩺 ${dispenseStudents.length} dispensés | 🚫 ${absentStudents.length} absents\n\nLes absents ET dispensés recevront la moyenne des points doubles gagnés par les joueurs.`)) return;
 
-        // Compensation : moyenne des doublesPoints gagnés par les présents
+        // Compensation : moyenne des doublesPoints gagnés par ceux qui ont JOUÉ
         let compensationPoints = 0;
         const withRef = presentStudents.filter(s => s.doublesPointsAtSessionStart !== undefined);
         if (withRef.length > 0) {
@@ -1133,8 +1136,8 @@
             compensationPoints = Math.round(total / gains.length);
         }
 
-        // Appliquer compensation aux absents (doublesPoints uniquement)
-        absentStudents.forEach(s => {
+        // Appliquer compensation aux absents ET dispensés (doublesPoints uniquement)
+        cantPlayStudents.forEach(s => {
             if (compensationPoints > 0) s.doublesPoints = (s.doublesPoints || 100) + compensationPoints;
         });
 
@@ -1147,10 +1150,11 @@
         const now = new Date();
         const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         doublesSessions.push({
-            sessionNumber: doublesSession,
+            sessionNumber: nextSessionNum,
             date: dateStr,
             dateISO: now.toISOString(),
             absentStudents: absentStudents.map(s => s.name),
+            dispenseStudents: dispenseStudents.map(s => s.name),
             compensationPoints,
             presentCount,
             totalStudents: students.length
@@ -1159,7 +1163,7 @@
         doublesSession++;
         await saveToFirebase();
         renderAll();
-        alert(`✅ Séance doubles ${doublesSession - 1} enregistrée !\n\n✅ ${presentCount} présents\n${absentStudents.length > 0 ? `🛡️ ${absentStudents.length} absent(s) → +${compensationPoints} pts doubles de compensation` : ''}`);
+        alert(`✅ Séance Doubles ${nextSessionNum} enregistrée !\n\n✅ ${presentStudents.length} ont joué | 🩺 ${dispenseStudents.length} dispensés | 🚫 ${absentStudents.length} absents\n${cantPlayStudents.length > 0 ? `🛡️ Compensation : +${compensationPoints} pts doubles` : ''}`);
     }
     window.startNewSession = startNewSession;
 
@@ -1170,7 +1174,7 @@
         const section = document.getElementById('progressionSection');
         const label = document.getElementById('progressionSessionLabel');
         const podium = document.getElementById('progressionPodium');
-        label.textContent = `Séance Doubles ${doublesSession}`;
+        label.textContent = doublesSessions.length > 0 ? `Séance Doubles ${doublesSessions[doublesSessions.length - 1].sessionNumber}` : `Séance en cours`;
 
         const withProgress = students.filter(s => s.doublesPointsAtSessionStart !== undefined);
         if (withProgress.length === 0) { section.style.display = 'none'; return; }
@@ -1232,9 +1236,14 @@
                 deltaHtml = `<span class="${cls}">${delta >= 0 ? '+' : ''}${delta}</span>`;
             }
             const simpleRank = getSimpleRank(s.name);
-            const absentBadge = s.absent ? ' <span style="background:#ff4444;color:white;padding:2px 6px;border-radius:4px;font-size:0.7em;">ABSENT</span>' : '';
+            const absentBadge = s.absent
+                ? ' <span style="background:#ff4444;color:white;padding:2px 6px;border-radius:4px;font-size:0.7em;">ABSENT</span>'
+                : s.dispense
+                    ? ' <span style="background:#fb8c00;color:white;padding:2px 6px;border-radius:4px;font-size:0.7em;">DISPENSÉ</span>'
+                    : '';
+            const rowOpacity = (s.absent || s.dispense) ? 'opacity:0.65;' : '';
             return `
-                <tr class="${i < mid ? 'top-half' : 'bottom-half'}" style="${s.absent ? 'opacity:0.6;' : ''}">
+                <tr class="${i < mid ? 'top-half' : 'bottom-half'}" style="${rowOpacity}">
                     <td class="rank">#${i+1}</td>
                     <td><strong>${s.name}</strong>${absentBadge}</td>
                     <td class="points">${s.doublesPoints || 100}</td>
@@ -1255,9 +1264,8 @@
         if (students.length === 0) { selects.forEach(s => s.innerHTML = '<option value="">Aucun élève</option>'); return; }
         const busy = new Set();
         doublesMatches.forEach(m => { busy.add(m.team1Player1); busy.add(m.team1Player2); busy.add(m.team2Player1); busy.add(m.team2Player2); });
-        const present = students.filter(s => !s.absent);
+        const present = students.filter(s => !s.absent && !s.dispense);
         const sorted = [...present].sort((a, b) => b.points !== a.points ? b.points - a.points : b.wins - a.wins);
-        selects.forEach(sel => {
             const cur = sel.value;
             sel.innerHTML = '<option value="">-- Sélectionner --</option>' + sorted.map(s => {
                 const r = getPlayerRank(s.name);
@@ -1272,7 +1280,7 @@
        RANDOM TEAMS INFO
     =================================================== */
     function updateRandomTeamsInfo() {
-        const present = students.filter(s => !s.absent);
+        const present = students.filter(s => !s.absent && !s.dispense);
         const courts = doublesSettings.nbCourts || 7;
         const maxPlaying = courts * 4;
         const playing = Math.min(present.length, maxPlaying);
@@ -1288,7 +1296,7 @@
        GENERATE BALANCED TEAMS
     =================================================== */
     function generateBalancedMatchups() {
-        const present = students.filter(s => !s.absent);
+        const present = students.filter(s => !s.absent && !s.dispense);
         const courts = doublesSettings.nbCourts || 7;
         const maxPlaying = courts * 4;
 
@@ -1325,8 +1333,8 @@
     =================================================== */
     window.openGenerateTeams = function() {
         if (!checkAuth('générer les équipes')) return;
-        if (students.filter(s => !s.absent).length < 4) {
-            alert('❌ Il faut au moins 4 élèves présents pour générer des équipes.');
+        if (students.filter(s => !s.absent && !s.dispense).length < 4) {
+            alert('❌ Il faut au moins 4 élèves présents (non dispensés) pour générer des équipes.');
             return;
         }
         generateAndShowModal();
@@ -1336,7 +1344,7 @@
         const result = generateBalancedMatchups();
         pendingProposedMatches = result;
 
-        document.getElementById('modalSessionLabel').textContent = `Séance ${doublesSession}`;
+        document.getElementById('modalSessionLabel').textContent = `Séance ${doublesSessions.length + 1}`;
         
         const grid = document.getElementById('proposedMatchesGrid');
         grid.innerHTML = result.matches.map((m, i) => {
@@ -1699,8 +1707,9 @@
             return (b.wins || 0) - (a.wins || 0);
         });
 
-        const presentN = students.filter(s => !s.absent).length;
+        const presentN = students.filter(s => !s.absent && !s.dispense).length;
         const absentN  = students.filter(s => s.absent).length;
+        const dispenseN = students.filter(s => s.dispense).length;
         document.getElementById('presentCount').textContent = presentN;
         document.getElementById('absentCount').textContent  = absentN;
 
